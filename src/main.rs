@@ -1,3 +1,5 @@
+use sigma_authentication::registries::StrategyRegistry;
+
 #[macro_use] extern crate rocket;
 
 #[get("/")]
@@ -7,5 +9,7 @@ fn index() -> &'static str {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![index])
+    let registry = StrategyRegistry::default();
+
+    rocket::build().manage(registry).mount("/", routes![index])
 }
