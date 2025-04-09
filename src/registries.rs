@@ -9,14 +9,14 @@ pub struct StrategyRegistry {
 
 impl StrategyRegistry {
     pub fn new() -> Self {
-        let mut strategies: HashMap<&'static str, Arc<dyn AuthStrategy>> = HashMap::new();
+        let mut strategies: HashMap<_, Arc<dyn AuthStrategy>> = HashMap::new();
         strategies.insert("password", Arc::new(PasswordStrategy));
         strategies.insert("google", Arc::new(GoogleStrategy));
 
         StrategyRegistry { strategies }
     }
 
-    pub fn get(&self, kind: &'static str) -> Option<Arc<dyn AuthStrategy>> {
+    pub fn get(&self, kind: &str) -> Option<Arc<dyn AuthStrategy>> {
         self.strategies.get(kind).cloned()
     }
 }
