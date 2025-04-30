@@ -2,7 +2,8 @@ use rocket::{get, post, State};
 use rocket::serde::json::Json;
 use rocket::http::Status;
 
-use crate::{models::Credentials, registries::StrategyRegistry};
+use crate::dto::Credentials;
+use crate::registries::StrategyRegistry;
 
 #[get("/")]
 pub fn index() -> &'static str {

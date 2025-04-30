@@ -1,4 +1,5 @@
-use crate::models::{Credentials, User};
+use crate::dto::Credentials;
+use crate::models::User;
 use crate::errors::AuthError;
 
 pub use self::password::PasswordStrategy;

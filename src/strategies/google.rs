@@ -1,5 +1,6 @@
 use crate::errors::AuthError;
-use crate::models::{Credentials, User};
+use crate::dto::Credentials;
+use crate::models::User;
 use crate::strategies::AuthStrategy;
 
 pub struct GoogleStrategy;

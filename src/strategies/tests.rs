@@ -1,4 +1,4 @@
-use crate::models::Credentials;
+use crate::dto::Credentials;
 use crate::errors::AuthError;
 use crate::strategies::{AuthStrategy, PasswordStrategy, GoogleStrategy};
 
