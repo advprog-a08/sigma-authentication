@@ -1,4 +1,11 @@
+use dashmap::DashMap;
+use lazy_static::lazy_static;
+
 use crate::models::User;
+
+lazy_static! {
+    static ref USERS: DashMap<usize, User> = DashMap::new();
+}
 
 pub struct UserRepository {
     users: Vec<User>,
@@ -12,7 +19,8 @@ impl Default for UserRepository {
 
 impl UserRepository {
     pub fn create(&mut self, email: String) {
-        self.users.push(User { id: "1".to_string(), email });
+        let id = USERS.len().to_string();
+        self.users.push(User { id, email });
     }
 
     pub fn find_one(&mut self, email: String) -> Option<&User> {
