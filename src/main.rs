@@ -16,6 +16,11 @@ async fn main() -> Result<(), rocket::Error> {
         .await
         .expect("Unable to connect to DB!");
 
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to migrate!");
+
     let app = App::default().with_pool(pool);
     app.launch().await
 }
