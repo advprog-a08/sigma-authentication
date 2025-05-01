@@ -9,8 +9,8 @@ impl UserService {
         Self { repo }
     }
 
-    pub fn authenticate(&mut self, email: String, password: String) -> bool {
-        let user = self.repo.find_one(email);
+    pub async fn authenticate(&mut self, email: String, password: String) -> bool {
+        let user = self.repo.find_one(email).await;
 
         if let Some(u) = user {
             u.password == password // temporary implementation
@@ -37,10 +37,10 @@ mod tests {
         let password = PASSWORD.to_string();
 
         let mut repo = UserRepository::new(pool);
-        repo.create(email.clone(), password.clone());
+        repo.create(email.clone(), password.clone()).await;
 
         let mut serv = UserService::new(repo);
-        let result = serv.authenticate(email, password);
+        let result = serv.authenticate(email, password).await;
 
         assert!(result);
     }
@@ -52,10 +52,10 @@ mod tests {
         let wrong_password = "asdf".to_string();
 
         let mut repo = UserRepository::new(pool);
-        repo.create(email.clone(), password.clone());
+        repo.create(email.clone(), password.clone()).await;
 
         let mut serv = UserService::new(repo);
-        let result = serv.authenticate(email, wrong_password);
+        let result = serv.authenticate(email, wrong_password).await;
 
         assert!(!result);
     }
