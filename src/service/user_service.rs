@@ -22,6 +22,8 @@ impl UserService {
 
 #[cfg(test)]
 mod tests {
+    use sqlx::PgPool;
+
     use crate::repository::UserRepository;
 
     use super::UserService;
@@ -29,12 +31,12 @@ mod tests {
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";
 
-    #[test]
-    fn test_authenticate_correct() {
+    #[sqlx::test]
+    fn test_authenticate_correct(pool: PgPool) {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
 
-        let mut repo = UserRepository::default();
+        let mut repo = UserRepository::new(pool);
         repo.create(email.clone(), password.clone());
 
         let mut serv = UserService::new(repo);
@@ -43,13 +45,13 @@ mod tests {
         assert!(result);
     }
 
-    #[test]
-    fn test_authenticate_incorrect() {
+    #[sqlx::test]
+    fn test_authenticate_incorrect(pool: PgPool) {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
         let wrong_password = "asdf".to_string();
 
-        let mut repo = UserRepository::default();
+        let mut repo = UserRepository::new(pool);
         repo.create(email.clone(), password.clone());
 
         let mut serv = UserService::new(repo);

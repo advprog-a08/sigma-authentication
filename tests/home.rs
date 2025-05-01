@@ -1,11 +1,12 @@
 use rocket::local::asynchronous::Client;
 use rocket::http::Status;
+use sqlx::PgPool;
 
 use sigma_authentication::app::App;
 
-#[rocket::async_test]
-async fn test_homepage() {
-    let rocket = App::default().rocket();
+#[sqlx::test]
+async fn test_homepage(pool: PgPool) {
+    let rocket = App::default().with_pool(pool).rocket();
     let client = Client::tracked(rocket).await.expect("valid rocket instance");
 
     let response = client.get("/").dispatch().await;
