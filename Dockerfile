@@ -1,10 +1,12 @@
 FROM rust:1.86-alpine AS builder
 
-RUN apk add --no-cache musl-dev gcc make openssl-dev
+RUN apk add --no-cache musl-dev gcc make pkgconfig openssl-dev openssl-libs-static
 
 WORKDIR /app
 
 COPY . .
+
+ENV SQLX_OFFLINE=true
 
 RUN rustup target add x86_64-unknown-linux-musl && \
     cargo build --release --target x86_64-unknown-linux-musl
