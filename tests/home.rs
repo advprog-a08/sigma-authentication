@@ -1,12 +1,11 @@
 use rocket::local::asynchronous::Client;
 use rocket::http::Status;
-use rocket::routes;
 
-use sigma_authentication::controllers::home::index;
+use sigma_authentication::app::App;
 
 #[rocket::async_test]
 async fn test_homepage() {
-    let rocket = rocket::build().mount("/", routes![index]);
+    let rocket = App::default().rocket();
     let client = Client::tracked(rocket).await.expect("valid rocket instance");
 
     let response = client.get("/").dispatch().await;

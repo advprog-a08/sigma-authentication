@@ -1,5 +1,6 @@
 #![allow(clippy::derivable_impls)]
 
+pub mod app;
 pub mod controllers;
 pub mod dto;
 pub mod errors;
