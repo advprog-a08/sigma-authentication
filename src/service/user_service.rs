@@ -9,8 +9,14 @@ impl UserService {
         Self { repo }
     }
 
-    pub fn authenticate(&self, email: String, password: String) -> bool {
-        false
+    pub fn authenticate(&mut self, email: String, password: String) -> bool {
+        let user = self.repo.find_one(email);
+
+        if let Some(u) = user {
+            u.password == password // temporary implementation
+        } else {
+            false
+        }
     }
 }
 
@@ -31,7 +37,7 @@ mod tests {
         let mut repo = UserRepository::default();
         repo.create(email.clone(), password.clone());
 
-        let serv = UserService::new(repo);
+        let mut serv = UserService::new(repo);
         let result = serv.authenticate(email, password);
 
         assert!(result);
@@ -46,7 +52,7 @@ mod tests {
         let mut repo = UserRepository::default();
         repo.create(email.clone(), password.clone());
 
-        let serv = UserService::new(repo);
+        let mut serv = UserService::new(repo);
         let result = serv.authenticate(email, wrong_password);
 
         assert!(!result);
