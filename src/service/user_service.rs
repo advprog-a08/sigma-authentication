@@ -22,21 +22,21 @@ impl UserService {
 
 #[cfg(test)]
 mod tests {
-    use sqlx::PgPool;
-
     use crate::repository::UserRepository;
+    use crate::database::setup_test_db;
 
     use super::UserService;
 
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";
 
-    #[sqlx::test]
-    fn test_authenticate_correct(pool: PgPool) {
+    #[rocket::async_test]
+    async fn test_authenticate_correct() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
+        let test_db = setup_test_db().await;
 
-        let mut repo = UserRepository::new(pool);
+        let mut repo = UserRepository::new(test_db.pool);
         repo.create(email.clone(), password.clone()).await;
 
         let mut serv = UserService::new(repo);
@@ -45,13 +45,14 @@ mod tests {
         assert!(result);
     }
 
-    #[sqlx::test]
-    fn test_authenticate_incorrect(pool: PgPool) {
+    #[rocket::async_test]
+    async fn test_authenticate_incorrect() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
         let wrong_password = "asdf".to_string();
+        let test_db = setup_test_db().await;
 
-        let mut repo = UserRepository::new(pool);
+        let mut repo = UserRepository::new(test_db.pool);
         repo.create(email.clone(), password.clone()).await;
 
         let mut serv = UserService::new(repo);

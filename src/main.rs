@@ -1,20 +1,10 @@
-use std::env;
-
+use sigma_authentication::database::setup_db;
 use sigma_authentication::app::App;
-use sqlx::postgres::PgPoolOptions;
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
     let _ = dotenvy::dotenv();
-
-    let db_url = env::var("DATABASE_URL")
-        .expect("Unable to read DATABASE_URL!");
-
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&db_url)
-        .await
-        .expect("Unable to connect to DB!");
+    let pool = setup_db().await;
 
     sqlx::migrate!("./migrations")
         .run(&pool)

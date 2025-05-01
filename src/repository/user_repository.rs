@@ -46,11 +46,15 @@ impl UserRepository {
 
 #[cfg(test)]
 mod tests {
+    use crate::database::setup_test_db;
+
     use super::*;
 
-    #[sqlx::test]
-    fn test_create_and_find_one(pool: PgPool) {
-        let mut ur = UserRepository::new(pool);
+    #[rocket::async_test]
+    async fn test_create_and_find_one() {
+        let test_db = setup_test_db().await;
+
+        let mut ur = UserRepository::new(test_db.pool);
         let user = ur.create(
             "asdf@gmail.com".to_string(),
             "HelloWorld123".to_string(),
