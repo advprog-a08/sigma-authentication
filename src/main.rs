@@ -5,7 +5,7 @@ use sqlx::postgres::PgPoolOptions;
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
-    dotenvy::dotenv().expect("Unable to read environment variables!");
+    let _ = dotenvy::dotenv();
 
     let db_url = env::var("DATABASE_URL")
         .expect("Unable to read DATABASE_URL!");

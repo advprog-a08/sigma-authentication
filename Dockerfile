@@ -1,6 +1,6 @@
 FROM rust:1.86-alpine AS builder
 
-RUN apk add --no-cache musl-dev gcc make
+RUN apk add --no-cache musl-dev gcc make openssl-dev
 
 WORKDIR /app
 
