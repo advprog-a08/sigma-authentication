@@ -35,7 +35,7 @@ mod tests {
         let mut ur = UserRepository::default();
         let user = ur.create("asdf@gmail.com".to_string());
 
-        let found = ur.find_one(user.id.to_string());
+        let found = ur.find_one(user.email.to_string());
         assert_eq!(found.unwrap().email, "asdf@gmail.com");
     }
 }
