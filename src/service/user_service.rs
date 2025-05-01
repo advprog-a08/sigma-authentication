@@ -9,8 +9,8 @@ impl UserService {
         Self { repo }
     }
 
-    pub fn authenticate(&mut self, email: String, password: String) -> bool {
-        let user = self.repo.find_one(email);
+    pub async fn authenticate(&mut self, email: String, password: String) -> bool {
+        let user = self.repo.find_one(email).await;
 
         if let Some(u) = user {
             u.password == password // temporary implementation
@@ -23,37 +23,40 @@ impl UserService {
 #[cfg(test)]
 mod tests {
     use crate::repository::UserRepository;
+    use crate::database::setup_test_db;
 
     use super::UserService;
 
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";
 
-    #[test]
-    fn test_authenticate_correct() {
+    #[rocket::async_test]
+    async fn test_authenticate_correct() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
+        let test_db = setup_test_db().await;
 
-        let mut repo = UserRepository::default();
-        repo.create(email.clone(), password.clone());
+        let mut repo = UserRepository::new(test_db.pool);
+        repo.create(email.clone(), password.clone()).await;
 
         let mut serv = UserService::new(repo);
-        let result = serv.authenticate(email, password);
+        let result = serv.authenticate(email, password).await;
 
         assert!(result);
     }
 
-    #[test]
-    fn test_authenticate_incorrect() {
+    #[rocket::async_test]
+    async fn test_authenticate_incorrect() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
         let wrong_password = "asdf".to_string();
+        let test_db = setup_test_db().await;
 
-        let mut repo = UserRepository::default();
-        repo.create(email.clone(), password.clone());
+        let mut repo = UserRepository::new(test_db.pool);
+        repo.create(email.clone(), password.clone()).await;
 
         let mut serv = UserService::new(repo);
-        let result = serv.authenticate(email, wrong_password);
+        let result = serv.authenticate(email, wrong_password).await;
 
         assert!(!result);
     }
