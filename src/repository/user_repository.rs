@@ -13,8 +13,8 @@ impl Default for UserRepository {
 }
 
 impl UserRepository {
-    pub fn create(&mut self, email: String) -> User {
-        let user = User { email: email.clone() };
+    pub fn create(&mut self, email: String, password: String) -> User {
+        let user = User { email: email.clone(), password };
         self.users.insert(email, user.clone());
 
         user
@@ -32,7 +32,10 @@ mod tests {
     #[test]
     fn test_create_and_find_one() {
         let mut ur = UserRepository::default();
-        let user = ur.create("asdf@gmail.com".to_string());
+        let user = ur.create(
+            "asdf@gmail.com".to_string(),
+            "HelloWorld123".to_string(),
+        );
 
         let found = ur.find_one(user.email.to_string());
         assert_eq!(found.unwrap().email, "asdf@gmail.com");
