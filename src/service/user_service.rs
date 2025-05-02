@@ -1,6 +1,6 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 
-use crate::repository::UserRepository;
+use crate::{models::User, repository::UserRepository};
 
 pub struct UserService {
     repo: UserRepository,
@@ -32,6 +32,20 @@ mod tests {
 
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";
+
+    #[rocket::async_test]
+    async fn test_register_user() {
+        let email = EMAIL.to_string();
+        let password = PASSWORD.to_string();
+        let test_db = setup_test_db().await;
+
+        let repo = UserRepository::new(test_db.pool);
+        let serv = UserService::new(repo);
+
+        let result = serv.register_user(email, password).await;
+
+        assert_eq!(result.email, EMAIL.to_string());
+    }
 
     #[rocket::async_test]
     async fn test_authenticate_correct() {
