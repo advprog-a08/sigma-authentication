@@ -1,3 +1,6 @@
+use argon2::Argon2;
+use password_hash::{PasswordHasher, SaltString};
+use password_hash::rand_core::OsRng;
 use sqlx::{query_as, PgPool};
 
 use crate::models::User;
@@ -13,6 +16,12 @@ impl UserRepository {
     }
 
     pub async fn create(&mut self, email: String, password: String) -> User {
+        let salt = SaltString::generate(&mut OsRng);
+        let password = Argon2::default()
+            .hash_password(password.as_bytes(), &salt)
+            .unwrap() // temporary
+            .to_string();
+
         query_as!(
             User,
             r#"
