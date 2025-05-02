@@ -1,3 +1,5 @@
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
+
 use crate::repository::UserRepository;
 
 pub struct UserService {
@@ -13,7 +15,8 @@ impl UserService {
         let user = self.repo.find_one(email).await;
 
         if let Some(u) = user {
-            u.password == password // temporary implementation
+            let hashed = PasswordHash::new(&u.password).unwrap();
+            Argon2::default().verify_password(password.as_bytes(), &hashed).is_ok()
         } else {
             false
         }
