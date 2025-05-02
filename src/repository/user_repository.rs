@@ -15,7 +15,7 @@ impl UserRepository {
         Self { pool }
     }
 
-    pub async fn create(&mut self, email: String, password: String) -> User {
+    pub async fn create(&self, email: String, password: String) -> User {
         let salt = SaltString::generate(&mut OsRng);
         let password = Argon2::default()
             .hash_password(password.as_bytes(), &salt)
@@ -37,7 +37,7 @@ impl UserRepository {
         .unwrap()
     }
 
-    pub async fn find_one(&mut self, email: String) -> Option<User> {
+    pub async fn find_one(&self, email: String) -> Option<User> {
         query_as!(
             User,
             r#"
@@ -63,7 +63,7 @@ mod tests {
     async fn test_hash_password() {
         let test_db = setup_test_db().await;
 
-        let mut ur = UserRepository::new(test_db.pool);
+        let ur = UserRepository::new(test_db.pool);
         let user = ur.create(
             "asdf@gmail.com".to_string(),
             "HelloWorld123".to_string(),
@@ -77,7 +77,7 @@ mod tests {
     async fn test_create_and_find_one() {
         let test_db = setup_test_db().await;
 
-        let mut ur = UserRepository::new(test_db.pool);
+        let ur = UserRepository::new(test_db.pool);
         let user = ur.create(
             "asdf@gmail.com".to_string(),
             "HelloWorld123".to_string(),
