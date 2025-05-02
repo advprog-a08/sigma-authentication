@@ -11,6 +11,10 @@ impl UserService {
         Self { repo }
     }
 
+    pub async fn register_user(&self, email: String, password: String) -> User {
+        self.repo.create(email, password).await
+    }
+
     pub async fn authenticate(&self, email: String, password: String) -> bool {
         let user = self.repo.find_one(email).await;
 
