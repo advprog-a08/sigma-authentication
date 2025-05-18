@@ -20,11 +20,12 @@ impl TableSessionService {
     }
 
     pub async fn create_session(&self, table_id: Uuid) -> Result<TableSession, TableSessionServiceError> {
-        todo!()
+        // TODO: Check if table_id is already taken
+        Ok(self.repo.create(table_id).await?)
     }
 
     pub async fn deactivate_session(&self, table_id: Uuid) -> Result<TableSession, TableSessionServiceError> {
-        todo!()
+        Ok(self.repo.deactivate(table_id).await?)
     }
 }
 
