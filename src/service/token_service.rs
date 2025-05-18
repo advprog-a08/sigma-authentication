@@ -58,8 +58,14 @@ mod tests {
     use std::thread;
     use std::time::Duration as StdDuration;
 
+    const SERVICE_NAME: &str = "sigma";
+
     fn setup_service() -> TokenService {
-        TokenService::new("test-secret".to_string())
+        TokenService::new(SERVICE_NAME.to_string(), "test-secret".to_string())
+    }
+
+    fn setup_fake_service() -> TokenService {
+        TokenService::new("fake".to_string(), "fake".to_string())
     }
 
     #[test]
@@ -70,6 +76,7 @@ mod tests {
         let token = service.create_jwt(user_id.clone());
         let claims = service.decode_jwt(token);
 
+        assert_eq!(claims.iss, SERVICE_NAME.to_string());
         assert_eq!(claims.sub, user_id);
         assert!(claims.exp > claims.iat);
     }
@@ -117,7 +124,7 @@ mod tests {
     #[should_panic]
     fn test_different_secret() {
         let service = setup_service();
-        let fake_service = TokenService::new("fake".to_string());
+        let fake_service = setup_fake_service();
 
         // simlate JWT created with different secret
         let fake_jwt = fake_service.create_jwt("test".to_string());
