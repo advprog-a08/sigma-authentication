@@ -2,8 +2,8 @@ use rocket::{Build, Rocket};
 use sqlx::PgPool;
 
 use crate::controllers::route_stage;
-use crate::service::UserService;
-use crate::repository::UserRepository;
+use crate::service::AdminService;
+use crate::repository::AdminRepository;
 
 #[derive(Default)]
 pub struct App {
@@ -14,11 +14,11 @@ impl App {
     pub fn rocket(self) -> Rocket<Build> {
         let pool = self.pool.expect("`pool` not set!");
 
-        let user_repository = UserRepository::new(pool.clone());
-        let user_service = UserService::new(user_repository);
+        let admin_repository = AdminRepository::new(pool.clone());
+        let admin_service = AdminService::new(admin_repository);
 
         rocket::build()
-            .manage(user_service)
+            .manage(admin_service)
             .attach(route_stage())
     }
 

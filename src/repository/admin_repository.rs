@@ -4,38 +4,38 @@ use password_hash::rand_core::OsRng;
 use sqlx::{query_as, PgPool};
 use thiserror::Error;
 
-use crate::models::User;
+use crate::models::Admin;
 
 #[derive(Error, Debug)]
-pub enum UserRepositoryError {
+pub enum AdminRepositoryError {
     #[error("An error occurred with the database")]
     Database(#[from] sqlx::Error),
 
-    #[error("An error occurred while creating user")]
-    CreateUser,
+    #[error("An error occurred while creating admin")]
+    CreateAdmin,
 }
 
 #[allow(dead_code)]
-pub struct UserRepository {
+pub struct AdminRepository {
     pool: PgPool,
 }
 
-impl UserRepository {
+impl AdminRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
 
-    pub async fn create(&self, email: String, password: String) -> Result<User, UserRepositoryError> {
+    pub async fn create(&self, email: String, password: String) -> Result<Admin, AdminRepositoryError> {
         let salt = SaltString::generate(&mut OsRng);
         let password = Argon2::default()
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|_| UserRepositoryError::CreateUser)?
+            .map_err(|_| AdminRepositoryError::CreateAdmin)?
             .to_string();
 
         Ok(query_as!(
-            User,
+            Admin,
             r#"
-            INSERT INTO users (email, password)
+            INSERT INTO admins (email, password)
             VALUES ($1, $2)
             RETURNING email, password
             "#,
@@ -46,12 +46,12 @@ impl UserRepository {
         .await?)
     }
 
-    pub async fn find_one(&self, email: String) -> Result<User, UserRepositoryError> {
+    pub async fn find_one(&self, email: String) -> Result<Admin, AdminRepositoryError> {
         Ok(query_as!(
-            User,
+            Admin,
             r#"
             SELECT email, password
-            FROM users
+            FROM admins
             WHERE email = $1;
             "#,
             email
@@ -71,13 +71,13 @@ mod tests {
     async fn test_hash_password() {
         let test_db = setup_test_db().await;
 
-        let ur = UserRepository::new(test_db.pool);
-        let user = ur.create(
+        let ar = AdminRepository::new(test_db.pool);
+        let admin = ar.create(
             "asdf@gmail.com".to_string(),
             "HelloWorld123".to_string(),
         ).await.unwrap();
 
-        let found = ur.find_one(user.email.to_string()).await;
+        let found = ar.find_one(admin.email.to_string()).await;
         assert_ne!(found.unwrap().password, "HelloWorld123".to_string());
     }
 
@@ -85,13 +85,13 @@ mod tests {
     async fn test_create_and_find_one() {
         let test_db = setup_test_db().await;
 
-        let ur = UserRepository::new(test_db.pool);
-        let user = ur.create(
+        let ar = AdminRepository::new(test_db.pool);
+        let admin = ar.create(
             "asdf@gmail.com".to_string(),
             "HelloWorld123".to_string(),
         ).await.unwrap();
 
-        let found = ur.find_one(user.email.to_string()).await;
+        let found = ar.find_one(admin.email.to_string()).await;
         assert_eq!(found.unwrap().email, "asdf@gmail.com");
     }
 }

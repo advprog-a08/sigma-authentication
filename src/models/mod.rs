@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
-pub struct User {
+pub struct Admin {
     pub email: String,
     pub password: String,
 }

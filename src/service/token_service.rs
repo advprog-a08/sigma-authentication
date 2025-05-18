@@ -38,7 +38,7 @@ impl TokenService {
         }
     }
 
-    pub fn create_jwt(&self, user_id: String) -> Result<String, TokenServiceError> {
+    pub fn create_jwt(&self, admin_id: String) -> Result<String, TokenServiceError> {
         let iat = Utc::now().timestamp() as usize;
 
         let exp = Utc::now()
@@ -48,7 +48,7 @@ impl TokenService {
 
         let claims = Claims {
             iss: self.service_name.clone(),
-            sub: user_id,
+            sub: admin_id,
             iat,
             exp,
         };
@@ -85,22 +85,22 @@ mod tests {
     #[test]
     fn test_jwt_roundtrip() {
         let service = setup_service();
-        let user_id = "user123".to_string();
+        let admin_id = "admin123".to_string();
 
-        let token = service.create_jwt(user_id.clone()).unwrap();
+        let token = service.create_jwt(admin_id.clone()).unwrap();
         let claims = service.decode_jwt(token).unwrap();
 
         assert_eq!(claims.iss, SERVICE_NAME.to_string());
-        assert_eq!(claims.sub, user_id);
+        assert_eq!(claims.sub, admin_id);
         assert!(claims.exp > claims.iat);
     }
 
     #[test]
     fn test_claims_content() {
         let service = setup_service();
-        let user_id = "alice".to_string();
+        let admin_id = "alice".to_string();
 
-        let token = service.create_jwt(user_id.clone()).unwrap();
+        let token = service.create_jwt(admin_id.clone()).unwrap();
         let claims = service.decode_jwt(token).unwrap();
 
         assert_eq!(claims.sub, "alice");
