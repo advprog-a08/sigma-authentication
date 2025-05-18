@@ -18,6 +18,7 @@
             pkgs.openssl
             pkgs.pkg-config
             pkgs.sqlx-cli
+            pkgs.cargo-nextest
           ];
         };
       });
