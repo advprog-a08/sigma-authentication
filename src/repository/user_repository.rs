@@ -2,8 +2,18 @@ use argon2::Argon2;
 use password_hash::{PasswordHasher, SaltString};
 use password_hash::rand_core::OsRng;
 use sqlx::{query_as, PgPool};
+use thiserror::Error;
 
 use crate::models::User;
+
+#[derive(Error, Debug)]
+pub enum UserRepositoryError {
+    #[error("An error occurred with the database")]
+    Database(#[from] sqlx::Error),
+
+    #[error("An error occurred while creating user")]
+    CreateUser,
+}
 
 #[allow(dead_code)]
 pub struct UserRepository {
@@ -15,14 +25,14 @@ impl UserRepository {
         Self { pool }
     }
 
-    pub async fn create(&self, email: String, password: String) -> User {
+    pub async fn create(&self, email: String, password: String) -> Result<User, UserRepositoryError> {
         let salt = SaltString::generate(&mut OsRng);
         let password = Argon2::default()
             .hash_password(password.as_bytes(), &salt)
-            .unwrap() // temporary
+            .map_err(|_| UserRepositoryError::CreateUser)?
             .to_string();
 
-        query_as!(
+        Ok(query_as!(
             User,
             r#"
             INSERT INTO users (email, password)
@@ -33,12 +43,11 @@ impl UserRepository {
             password
         )
         .fetch_one(&self.pool)
-        .await
-        .unwrap()
+        .await?)
     }
 
-    pub async fn find_one(&self, email: String) -> Option<User> {
-        query_as!(
+    pub async fn find_one(&self, email: String) -> Result<User, UserRepositoryError> {
+        Ok(query_as!(
             User,
             r#"
             SELECT email, password
@@ -48,8 +57,7 @@ impl UserRepository {
             email
         )
         .fetch_one(&self.pool)
-        .await
-        .ok()
+        .await?)
     }
 }
 
@@ -67,7 +75,7 @@ mod tests {
         let user = ur.create(
             "asdf@gmail.com".to_string(),
             "HelloWorld123".to_string(),
-        ).await;
+        ).await.unwrap();
 
         let found = ur.find_one(user.email.to_string()).await;
         assert_ne!(found.unwrap().password, "HelloWorld123".to_string());
@@ -81,7 +89,7 @@ mod tests {
         let user = ur.create(
             "asdf@gmail.com".to_string(),
             "HelloWorld123".to_string(),
-        ).await;
+        ).await.unwrap();
 
         let found = ur.find_one(user.email.to_string()).await;
         assert_eq!(found.unwrap().email, "asdf@gmail.com");

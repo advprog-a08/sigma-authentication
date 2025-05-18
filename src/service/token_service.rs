@@ -1,6 +1,7 @@
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rocket::serde::{Serialize, Deserialize};
+use thiserror::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -9,6 +10,15 @@ pub struct Claims {
     pub exp: usize,
     pub iat: usize,
     pub iss: String,
+}
+
+#[derive(Error, Debug)]
+pub enum TokenServiceError {
+    #[error("JWT Error: {0}")]
+    JwtError(#[from] jsonwebtoken::errors::Error),
+
+    #[error("An error occurred")]
+    OtherError,
 }
 
 pub struct TokenService {
@@ -28,12 +38,12 @@ impl TokenService {
         }
     }
 
-    pub fn create_jwt(&self, user_id: String) -> String {
+    pub fn create_jwt(&self, user_id: String) -> Result<String, TokenServiceError> {
         let iat = Utc::now().timestamp() as usize;
 
         let exp = Utc::now()
             .checked_add_signed(Duration::hours(24))
-            .expect("Valid timestamp")
+            .ok_or(TokenServiceError::OtherError)?
             .timestamp() as usize;
 
         let claims = Claims {
@@ -43,18 +53,16 @@ impl TokenService {
             exp,
         };
 
-        encode(&Header::default(), &claims, &self.encoding_key)
-            .expect("Token creation failed")
+        Ok(encode(&Header::default(), &claims, &self.encoding_key)?)
     }
 
-    pub fn decode_jwt(&self, token: String) -> Claims {
+    pub fn decode_jwt(&self, token: String) -> Result<Claims, TokenServiceError> {
         let mut validation = Validation::default();
         validation.validate_exp = true;
 
-        let token = decode::<Claims>(&token, &self.decoding_key, &validation)
-            .expect("Token decoding failed");
+        let token = decode::<Claims>(&token, &self.decoding_key, &validation)?;
 
-        token.claims
+        Ok(token.claims)
     }
 }
 
@@ -79,8 +87,8 @@ mod tests {
         let service = setup_service();
         let user_id = "user123".to_string();
 
-        let token = service.create_jwt(user_id.clone());
-        let claims = service.decode_jwt(token);
+        let token = service.create_jwt(user_id.clone()).unwrap();
+        let claims = service.decode_jwt(token).unwrap();
 
         assert_eq!(claims.iss, SERVICE_NAME.to_string());
         assert_eq!(claims.sub, user_id);
@@ -92,8 +100,8 @@ mod tests {
         let service = setup_service();
         let user_id = "alice".to_string();
 
-        let token = service.create_jwt(user_id.clone());
-        let claims = service.decode_jwt(token);
+        let token = service.create_jwt(user_id.clone()).unwrap();
+        let claims = service.decode_jwt(token).unwrap();
 
         assert_eq!(claims.sub, "alice");
         let now = Utc::now().timestamp() as usize;
@@ -102,20 +110,18 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_invalid_token() {
         let service = setup_service();
 
         let invalid_token = "this.is.not.valid".to_string();
 
-        service.decode_jwt(invalid_token);
+        assert!(matches!(service.decode_jwt(invalid_token), Err(TokenServiceError::JwtError(..))));
     }
 
     #[test]
-    #[should_panic]
     fn test_tampered_token() {
         let service = setup_service();
-        let token = service.create_jwt("bob".to_string());
+        let token = service.create_jwt("bob".to_string()).unwrap();
 
         let mut parts: Vec<&str> = token.split('.').collect();
         assert_eq!(parts.len(), 3);
@@ -123,31 +129,30 @@ mod tests {
         parts[1] = "tampered_payload";
         let tampered_token = parts.join(".");
 
-        service.decode_jwt(tampered_token);
+        assert!(matches!(service.decode_jwt(tampered_token), Err(TokenServiceError::JwtError(..))));
     }
 
     #[test]
-    #[should_panic]
     fn test_different_secret() {
         let service = setup_service();
         let fake_service = setup_fake_service();
 
         // simlate JWT created with different secret
-        let fake_jwt = fake_service.create_jwt("test".to_string());
+        let fake_jwt = fake_service.create_jwt("test".to_string()).unwrap();
 
-        service.decode_jwt(fake_jwt);
+        assert!(matches!(service.decode_jwt(fake_jwt), Err(TokenServiceError::JwtError(..))));
     }
 
     #[test]
     fn test_unique_iat() {
         let service = setup_service();
 
-        let token1 = service.create_jwt("test".to_string());
+        let token1 = service.create_jwt("test".to_string()).unwrap();
         thread::sleep(StdDuration::from_secs(1));
-        let token2 = service.create_jwt("test".to_string());
+        let token2 = service.create_jwt("test".to_string()).unwrap();
 
-        let claims1 = service.decode_jwt(token1);
-        let claims2 = service.decode_jwt(token2);
+        let claims1 = service.decode_jwt(token1).unwrap();
+        let claims2 = service.decode_jwt(token2).unwrap();
 
         assert!(claims1.iat < claims2.iat);
     }

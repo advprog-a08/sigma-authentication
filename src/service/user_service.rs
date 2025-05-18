@@ -1,6 +1,17 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use thiserror::Error;
 
-use crate::{models::User, repository::UserRepository};
+use crate::models::User;
+use crate::repository::{UserRepository, UserRepositoryError};
+
+#[derive(Error, Debug)]
+pub enum UserServiceError {
+    #[error("{0}")]
+    Repository(#[from] UserRepositoryError),
+
+    #[error("The password provided is incorrect")]
+    IncorrectPassword,
+}
 
 pub struct UserService {
     repo: UserRepository,
@@ -11,19 +22,17 @@ impl UserService {
         Self { repo }
     }
 
-    pub async fn register_user(&self, email: String, password: String) -> User {
-        self.repo.create(email, password).await
+    pub async fn register_user(&self, email: String, password: String) -> Result<User, UserServiceError> {
+        Ok(self.repo.create(email, password).await?)
     }
 
-    pub async fn authenticate(&self, email: String, password: String) -> bool {
-        let user = self.repo.find_one(email).await;
+    pub async fn authenticate(&self, email: String, password: String) -> Result<(), UserServiceError> {
+        let user = self.repo.find_one(email).await?;
 
-        if let Some(u) = user {
-            let hashed = PasswordHash::new(&u.password).unwrap();
-            Argon2::default().verify_password(password.as_bytes(), &hashed).is_ok()
-        } else {
-            false
-        }
+        let hashed = PasswordHash::new(&user.password).unwrap();
+        Argon2::default()
+            .verify_password(password.as_bytes(), &hashed)
+            .map_err(|_| UserServiceError::IncorrectPassword)
     }
 }
 
@@ -46,7 +55,7 @@ mod tests {
         let repo = UserRepository::new(test_db.pool);
         let serv = UserService::new(repo);
 
-        let result = serv.register_user(email, password).await;
+        let result = serv.register_user(email, password).await.unwrap();
 
         assert_eq!(result.email, EMAIL.to_string());
     }
@@ -58,12 +67,12 @@ mod tests {
         let test_db = setup_test_db().await;
 
         let repo = UserRepository::new(test_db.pool);
-        repo.create(email.clone(), password.clone()).await;
+        repo.create(email.clone(), password.clone()).await.unwrap();
 
         let serv = UserService::new(repo);
         let result = serv.authenticate(email, password).await;
 
-        assert!(result);
+        assert!(result.is_ok());
     }
 
     #[rocket::async_test]
@@ -74,11 +83,11 @@ mod tests {
         let test_db = setup_test_db().await;
 
         let repo = UserRepository::new(test_db.pool);
-        repo.create(email.clone(), password.clone()).await;
+        repo.create(email.clone(), password.clone()).await.unwrap();
 
         let serv = UserService::new(repo);
         let result = serv.authenticate(email, wrong_password).await;
 
-        assert!(!result);
+        assert!(result.is_err());
     }
 }
