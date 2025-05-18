@@ -26,11 +26,29 @@ impl TokenService {
     }
 
     pub fn create_jwt(&self, user_id: String) -> String {
-        todo!()
+        let iat = Utc::now().timestamp() as usize;
+
+        let exp = Utc::now()
+            .checked_add_signed(Duration::hours(24))
+            .expect("Valid timestamp")
+            .timestamp() as usize;
+
+        let claims = Claims {
+            sub: user_id,
+            iat,
+            exp,
+        };
+
+        encode(&Header::default(), &claims, &self.encoding_key)
+            .expect("Token creation failed")
     }
 
     pub fn decode_jwt(&self, token: String) -> Claims {
-        todo!()
+        let validation = Validation::default();
+        let token = decode::<Claims>(&token, &self.decoding_key, &validation)
+            .expect("Token decoding failed");
+
+        token.claims
     }
 }
 
