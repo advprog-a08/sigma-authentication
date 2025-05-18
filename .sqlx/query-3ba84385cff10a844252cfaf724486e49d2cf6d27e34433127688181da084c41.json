@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO users (email, password)\n            VALUES ($1, $2)\n            RETURNING email, password\n            ",
+  "query": "\n            SELECT email, password\n            FROM admins\n            WHERE email = $1;\n            ",
   "describe": {
     "columns": [
       {
@@ -16,8 +16,7 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Varchar"
+        "Text"
       ]
     },
     "nullable": [
@@ -25,5 +24,5 @@
       false
     ]
   },
-  "hash": "4cecf63520940d273675630b8151745edb2d786fe164b2abcbd3cd009fa52abc"
+  "hash": "3ba84385cff10a844252cfaf724486e49d2cf6d27e34433127688181da084c41"
 }
