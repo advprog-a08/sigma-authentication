@@ -48,7 +48,9 @@ impl TokenService {
     }
 
     pub fn decode_jwt(&self, token: String) -> Claims {
-        let validation = Validation::default();
+        let mut validation = Validation::default();
+        validation.validate_exp = true;
+
         let token = decode::<Claims>(&token, &self.decoding_key, &validation)
             .expect("Token decoding failed");
 
