@@ -1,61 +1,61 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use thiserror::Error;
 
-use crate::models::User;
-use crate::repository::{UserRepository, UserRepositoryError};
+use crate::models::Admin;
+use crate::repository::{AdminRepository, AdminRepositoryError};
 
 #[derive(Error, Debug)]
-pub enum UserServiceError {
+pub enum AdminServiceError {
     #[error("{0}")]
-    Repository(#[from] UserRepositoryError),
+    Repository(#[from] AdminRepositoryError),
 
     #[error("The password provided is incorrect")]
     IncorrectPassword,
 }
 
-pub struct UserService {
-    repo: UserRepository,
+pub struct AdminService {
+    repo: AdminRepository,
 }
 
-impl UserService {
-    pub fn new(repo: UserRepository) -> Self {
+impl AdminService {
+    pub fn new(repo: AdminRepository) -> Self {
         Self { repo }
     }
 
-    pub async fn register_user(&self, email: String, password: String) -> Result<User, UserServiceError> {
+    pub async fn register_admin(&self, email: String, password: String) -> Result<Admin, AdminServiceError> {
         Ok(self.repo.create(email, password).await?)
     }
 
-    pub async fn authenticate(&self, email: String, password: String) -> Result<(), UserServiceError> {
-        let user = self.repo.find_one(email).await?;
+    pub async fn authenticate(&self, email: String, password: String) -> Result<(), AdminServiceError> {
+        let admin = self.repo.find_one(email).await?;
 
-        let hashed = PasswordHash::new(&user.password).unwrap();
+        let hashed = PasswordHash::new(&admin.password).unwrap();
         Argon2::default()
             .verify_password(password.as_bytes(), &hashed)
-            .map_err(|_| UserServiceError::IncorrectPassword)
+            .map_err(|_| AdminServiceError::IncorrectPassword)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::repository::UserRepository;
+    use crate::repository::AdminRepository;
     use crate::database::setup_test_db;
 
-    use super::UserService;
+    use super::AdminService;
 
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";
 
     #[rocket::async_test]
-    async fn test_register_user() {
+    async fn test_register_admin() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
         let test_db = setup_test_db().await;
 
-        let repo = UserRepository::new(test_db.pool);
-        let serv = UserService::new(repo);
+        let repo = AdminRepository::new(test_db.pool);
+        let serv = AdminService::new(repo);
 
-        let result = serv.register_user(email, password).await.unwrap();
+        let result = serv.register_admin(email, password).await.unwrap();
 
         assert_eq!(result.email, EMAIL.to_string());
     }
@@ -66,10 +66,10 @@ mod tests {
         let password = PASSWORD.to_string();
         let test_db = setup_test_db().await;
 
-        let repo = UserRepository::new(test_db.pool);
+        let repo = AdminRepository::new(test_db.pool);
         repo.create(email.clone(), password.clone()).await.unwrap();
 
-        let serv = UserService::new(repo);
+        let serv = AdminService::new(repo);
         let result = serv.authenticate(email, password).await;
 
         assert!(result.is_ok());
@@ -82,10 +82,10 @@ mod tests {
         let wrong_password = "asdf".to_string();
         let test_db = setup_test_db().await;
 
-        let repo = UserRepository::new(test_db.pool);
+        let repo = AdminRepository::new(test_db.pool);
         repo.create(email.clone(), password.clone()).await.unwrap();
 
-        let serv = UserService::new(repo);
+        let serv = AdminService::new(repo);
         let result = serv.authenticate(email, wrong_password).await;
 
         assert!(result.is_err());
