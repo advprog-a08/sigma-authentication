@@ -8,18 +8,21 @@ pub struct Claims {
     pub sub: String,
     pub exp: usize,
     pub iat: usize,
+    pub iss: String,
 }
 
 pub struct TokenService {
+    service_name: String,
     decoding_key: DecodingKey,
     encoding_key: EncodingKey,
 }
 
 impl TokenService {
-    pub fn new(secret: String) -> Self {
+    pub fn new(service_name: String, secret: String) -> Self {
         let secret = secret.as_bytes();
 
         Self { 
+            service_name,
             decoding_key: DecodingKey::from_secret(secret),
             encoding_key: EncodingKey::from_secret(secret),
         }
@@ -34,6 +37,7 @@ impl TokenService {
             .timestamp() as usize;
 
         let claims = Claims {
+            iss: self.service_name.clone(),
             sub: user_id,
             iat,
             exp,
