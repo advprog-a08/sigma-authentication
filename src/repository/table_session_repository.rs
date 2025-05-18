@@ -20,15 +20,46 @@ impl TableSessionRepository {
     }
 
     pub async fn create(&self, table_id: Uuid) -> Result<TableSession, TableSessionRepositoryError> {
-        todo!()
+        Ok(query_as!(
+            TableSession,
+            r#"
+            INSERT INTO table_sessions (table_id)
+            VALUES ($1)
+            RETURNING id, table_id, is_active, created_at
+            "#,
+            table_id
+        )
+        .fetch_one(&self.pool)
+        .await?)
     }
 
     pub async fn find_by_id(&self, id: Uuid) -> Result<TableSession, TableSessionRepositoryError> {
-        todo!()
+        Ok(query_as!(
+            TableSession,
+            r#"
+            SELECT *
+            FROM table_sessions
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_one(&self.pool)
+        .await?)
     }
 
     pub async fn deactivate(&self, id: Uuid) -> Result<TableSession, TableSessionRepositoryError> {
-        todo!()
+        Ok(query_as!(
+            TableSession,
+            r#"
+            UPDATE table_sessions
+            SET is_active = FALSE
+            WHERE id = $1
+            RETURNING id, table_id, is_active, created_at
+            "#,
+            id
+        )
+        .fetch_one(&self.pool)
+        .await?)
     }
 }
 
