@@ -9,8 +9,8 @@ pub enum AdminServiceError {
     #[error("{0}")]
     Repository(#[from] AdminRepositoryError),
 
-    #[error("The password provided is incorrect")]
-    IncorrectPassword,
+    #[error("The provided credentials is incorrect")]
+    InvalidCredentials,
 }
 
 pub struct AdminService {
@@ -36,9 +36,9 @@ impl AdminService {
                 let hashed = PasswordHash::new(&admin.password).unwrap();
                 Argon2::default()
                     .verify_password(password.as_bytes(), &hashed)
-                    .map_err(|_| AdminServiceError::IncorrectPassword)
+                    .map_err(|_| AdminServiceError::InvalidCredentials)
             }
-            None => Err(AdminServiceError::IncorrectPassword)
+            None => Err(AdminServiceError::InvalidCredentials)
         }
     }
 }
