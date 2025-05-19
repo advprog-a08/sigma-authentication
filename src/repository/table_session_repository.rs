@@ -33,7 +33,7 @@ impl TableSessionRepository {
         .await?)
     }
 
-    pub async fn find_by_id(&self, id: Uuid) -> Result<TableSession, TableSessionRepositoryError> {
+    pub async fn find_by_id(&self, id: Uuid) -> Result<Option<TableSession>, TableSessionRepositoryError> {
         Ok(query_as!(
             TableSession,
             r#"
@@ -43,7 +43,7 @@ impl TableSessionRepository {
             "#,
             id
         )
-        .fetch_one(&self.pool)
+        .fetch_optional(&self.pool)
         .await?)
     }
 
@@ -88,7 +88,7 @@ mod tests {
         let table_id = Uuid::new_v4();
         
         let created_session = tsr.create(table_id).await.unwrap();
-        let found_session = tsr.find_by_id(created_session.id).await.unwrap();
+        let Some(found_session) = tsr.find_by_id(created_session.id).await.unwrap() else { panic!() };
         
         assert_eq!(found_session.id, created_session.id);
         assert_eq!(found_session.table_id, table_id);
@@ -109,7 +109,7 @@ mod tests {
         assert!(!deactivated_session.is_active);
         
         // Verify the session is indeed deactivated in the database
-        let found_session = tsr.find_by_id(created_session.id).await.unwrap();
+        let Some(found_session) = tsr.find_by_id(created_session.id).await.unwrap() else { panic!() };
         assert!(!found_session.is_active);
     }
 
@@ -119,15 +119,8 @@ mod tests {
         let tsr = TableSessionRepository::new(test_db.pool);
         let random_id = Uuid::new_v4();
         
-        let result = tsr.find_by_id(random_id).await;
-        assert!(result.is_err());
-        
-        match result {
-            Err(TableSessionRepositoryError::Database(e)) => {
-                assert!(e.to_string().contains("no rows returned"));
-            },
-            _ => panic!("Expected Database error with no rows returned"),
-        }
+        let result = tsr.find_by_id(random_id).await.unwrap();
+        assert!(result.is_none());
     }
 
     #[rocket::async_test]
