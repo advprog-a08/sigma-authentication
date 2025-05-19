@@ -13,11 +13,11 @@ pub fn route_stage() -> AdHoc {
         rocket
             .mount("/", routes![home::index])
             .mount("/admin", routes![admin::login, admin::create])
-            .mount("/table-session", routes![table_session::create_session])
+            .mount("/table-session", routes![table_session::create_session, table_session::get_session])
     })
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct GeneralErrorResponse {
     pub message: String,
@@ -29,7 +29,7 @@ pub struct ValidationErrorResponse {
     pub errors: ValidationErrors,
 }
 
-#[derive(Responder)]
+#[derive(Debug, Responder)]
 pub enum ApiResponse<T> {
     #[response(status = 200)]
     Success(Json<T>),
