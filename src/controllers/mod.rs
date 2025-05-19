@@ -1,6 +1,7 @@
 use rocket::routes;
 use rocket::fairing::AdHoc;
 
+pub mod admin;
 pub mod home;
 
 pub fn route_stage() -> AdHoc {
