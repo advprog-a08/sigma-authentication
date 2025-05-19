@@ -3,7 +3,10 @@ use rocket::Responder;
 use rocket::post;
 use rocket::State;
 use rocket::serde::{Deserialize, Serialize};
+use validator::Validate;
+use validator::ValidationErrors;
 
+use crate::models::AdminCreate;
 use crate::service::AdminService;
 use crate::service::TokenService;
 
@@ -57,6 +60,32 @@ pub async fn login(
             message: err.to_string(),
         })),
     }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ValidationErrorResponse {
+    pub errors: ValidationErrors,
+}
+
+#[derive(Responder)]
+pub enum CreateResponse {
+    #[response(status = 200)]
+    Success(Json<SuccessResponse>),
+
+    #[response(status = 422)]
+    ValidationError(Json<ValidationErrorResponse>),
+}
+
+#[post("/", data = "<admin_data>")]
+pub async fn create(
+    admin_data: Json<AdminCreate>,
+) -> CreateResponse {
+    if let Err(e) = admin_data.validate() {
+        return CreateResponse::ValidationError(Json(ValidationErrorResponse { errors: e }))
+    }
+
+    CreateResponse::Success(Json(SuccessResponse { token: "".to_string() }))
 }
 
 #[cfg(test)]
