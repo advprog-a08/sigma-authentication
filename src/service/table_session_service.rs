@@ -27,6 +27,10 @@ impl TableSessionService {
     pub async fn deactivate_session(&self, table_id: Uuid) -> Result<TableSession, TableSessionServiceError> {
         Ok(self.repo.deactivate(table_id).await?)
     }
+
+    pub async fn find_by_id(&self, id: Uuid) -> Result<Option<TableSession>, TableSessionServiceError> {
+        Ok(self.repo.find_by_id(id).await?)
+    }
 }
 
 #[cfg(test)]
@@ -47,6 +51,22 @@ mod tests {
         
         assert_eq!(result.table_id, table_id);
         assert!(result.is_active);
+    }
+
+    #[rocket::async_test]
+    async fn test_find_by_id() {
+        let test_db = setup_test_db().await;
+        let table_id = Uuid::new_v4();
+
+        let repo = TableSessionRepository::new(test_db.pool);
+        let table_session = repo.create(table_id).await.unwrap();
+
+        let service = TableSessionService::new(repo);
+        let result = service.find_by_id(table_session.id).await.unwrap();
+        let Some(result) = result else { panic!() };
+
+        assert_eq!(result.id, table_session.id);
+        assert_eq!(result.table_id, table_id);
     }
 
     #[rocket::async_test]
