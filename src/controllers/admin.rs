@@ -1,3 +1,64 @@
+use rocket::serde::json::Json;
+use rocket::Responder;
+use rocket::post;
+use rocket::State;
+use rocket::serde::{Deserialize, Serialize};
+
+use crate::service::AdminService;
+use crate::service::TokenService;
+
+#[derive(Debug, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct LoginData {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct SuccessResponse {
+    pub token: String,
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ErrorResponse {
+    pub message: String,
+}
+
+#[derive(Responder)]
+pub enum LoginResponse {
+    #[response(status = 200)]
+    Success(Json<SuccessResponse>),
+
+    #[response(status = 400)]
+    Error(Json<ErrorResponse>),
+}
+
+#[post("/login", data = "<login_data>")]
+pub async fn login(
+    login_data: Json<LoginData>,
+    admin_service: &State<AdminService>,
+    token_service: &State<TokenService>,
+) -> LoginResponse {
+    let Json(LoginData { email, password }) = login_data;
+
+    match admin_service.authenticate(email.clone(), password).await {
+        Ok(_) => {
+            match token_service.create_jwt(email) {
+                Ok(token) => LoginResponse::Success(Json(SuccessResponse { token })),
+                Err(_) => LoginResponse::Error(Json(ErrorResponse {
+                    message: "Failed to create authentication token".to_string()
+                })),
+            }
+        },
+
+        Err(err) => LoginResponse::Error(Json(ErrorResponse {
+            message: err.to_string(),
+        })),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rocket::http::Status;
