@@ -3,28 +3,25 @@ use rocket::serde::Serialize;
 use rocket::{post, State};
 
 use crate::models::TableSessionCreate;
-use crate::service::{TableSessionService, TokenService};
+use crate::service::TableSessionService;
 
 use super::ApiResponse;
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CreateSessionSuccess {
-    pub token: String,
+    pub session_id: String,
 }
 
 #[post("/", data = "<session_data>")]
 pub async fn create_session(
     session_data: Json<TableSessionCreate>,
     table_session_service: &State<TableSessionService>,
-    token_service: &State<TokenService>,
 ) -> ApiResponse<CreateSessionSuccess> {
     match table_session_service.create_session(session_data.table_id).await {
         Ok(table_session) => {
-            match token_service.create_jwt(table_session.id.to_string()) {
-                Ok(token) => ApiResponse::success(CreateSessionSuccess { token }),
-                Err(_) => ApiResponse::general_error("Failed to create authentication token".to_string()),
-            }
+            let session_id = table_session.id.to_string();
+            ApiResponse::success(CreateSessionSuccess { session_id })
         },
         Err(e) => ApiResponse::general_error(e.to_string()),
     }
@@ -58,6 +55,6 @@ mod tests {
 
         let body = response.into_json::<Value>().await.expect("valid JSON");
 
-        body["token"].as_str().expect("token is a string");
+        body["session_id"].as_str().expect("session_id is a string");
     }
 }
