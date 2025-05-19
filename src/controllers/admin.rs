@@ -1,14 +1,14 @@
 use rocket::serde::json::Json;
-use rocket::Responder;
 use rocket::post;
 use rocket::State;
 use rocket::serde::{Deserialize, Serialize};
 use validator::Validate;
-use validator::ValidationErrors;
 
 use crate::models::AdminCreate;
 use crate::service::AdminService;
 use crate::service::TokenService;
+
+use super::ApiResponse;
 
 #[derive(Debug, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -19,23 +19,8 @@ pub struct LoginData {
 
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
-pub struct SuccessResponse {
+pub struct LoginSuccess {
     pub token: String,
-}
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-pub struct ErrorResponse {
-    pub message: String,
-}
-
-#[derive(Responder)]
-pub enum LoginResponse {
-    #[response(status = 200)]
-    Success(Json<SuccessResponse>),
-
-    #[response(status = 400)]
-    Error(Json<ErrorResponse>),
 }
 
 #[post("/login", data = "<login_data>")]
@@ -43,49 +28,36 @@ pub async fn login(
     login_data: Json<LoginData>,
     admin_service: &State<AdminService>,
     token_service: &State<TokenService>,
-) -> LoginResponse {
+) -> ApiResponse<LoginSuccess> {
     let Json(LoginData { email, password }) = login_data;
 
     match admin_service.authenticate(email.clone(), password).await {
         Ok(_) => {
             match token_service.create_jwt(email) {
-                Ok(token) => LoginResponse::Success(Json(SuccessResponse { token })),
-                Err(_) => LoginResponse::Error(Json(ErrorResponse {
-                    message: "Failed to create authentication token".to_string()
-                })),
+                Ok(token) => ApiResponse::success(LoginSuccess { token }),
+                Err(_) => ApiResponse::general_error("Failed to create authentication token".to_string()),
             }
         },
 
-        Err(err) => LoginResponse::Error(Json(ErrorResponse {
-            message: err.to_string(),
-        })),
+        Err(err) => ApiResponse::general_error(err.to_string()),
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
-pub struct ValidationErrorResponse {
-    pub errors: ValidationErrors,
-}
+pub struct CreateSuccess {
 
-#[derive(Responder)]
-pub enum CreateResponse {
-    #[response(status = 200)]
-    Success(Json<SuccessResponse>),
-
-    #[response(status = 422)]
-    ValidationError(Json<ValidationErrorResponse>),
 }
 
 #[post("/", data = "<admin_data>")]
 pub async fn create(
     admin_data: Json<AdminCreate>,
-) -> CreateResponse {
+) -> ApiResponse<CreateSuccess> {
     if let Err(e) = admin_data.validate() {
-        return CreateResponse::ValidationError(Json(ValidationErrorResponse { errors: e }))
+        return ApiResponse::validation_error(e);
     }
 
-    CreateResponse::Success(Json(SuccessResponse { token: "".to_string() }))
+    ApiResponse::success(CreateSuccess {  })
 }
 
 #[cfg(test)]
