@@ -4,6 +4,7 @@ use rocket::State;
 use rocket::serde::{Deserialize, Serialize};
 use validator::Validate;
 
+use crate::models::Admin;
 use crate::models::AdminCreate;
 use crate::service::AdminService;
 use crate::service::TokenService;
@@ -46,7 +47,7 @@ pub async fn login(
 #[derive(Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CreateSuccess {
-
+    admin: Admin,
 }
 
 #[post("/", data = "<admin_data>")]
@@ -58,10 +59,14 @@ pub async fn create(
         return ApiResponse::validation_error(e);
     }
 
-    match admin_service.find_one(admin_data.email.clone()).await {
+    let Json(AdminCreate { email, password }) = admin_data;
+
+    match admin_service.find_one(email.clone()).await {
         Ok(None) => {
-            // create admin
-            ApiResponse::success(CreateSuccess {})
+            match admin_service.register_admin(email, password).await {
+                Ok(admin) => ApiResponse::success(CreateSuccess { admin }),
+                Err(e) => ApiResponse::general_error(e.to_string()),
+            }
         }
         Ok(Some(_)) => ApiResponse::general_error("Email already exists".to_string()),
         Err(e) => ApiResponse::general_error(e.to_string()),
@@ -123,7 +128,7 @@ mod tests {
     #[rocket::async_test]
     async fn test_create_validation() {
         let test_db = database::setup_test_db().await;
-        let rocket = App::default().with_pool(test_db.pool).rocket();
+        let rocket = App::default().with_pool(test_db.pool.clone()).rocket();
         let client = Client::tracked(rocket).await.expect("valid rocket instance");
 
         let response = client
@@ -152,6 +157,9 @@ mod tests {
                 .expect("error code is a string"),
             "Password must be at least 8 characters long",
         );
+
+        let admin_repository = AdminRepository::new(test_db.pool.clone());
+        assert!(admin_repository.find_one("test@example.com".to_string()).await.unwrap().is_none())
     }
 
     #[rocket::async_test]
@@ -181,5 +189,33 @@ mod tests {
             body["message"].as_str().expect("message is a string"),
             "Email already exists",
         );
+    }
+
+    #[rocket::async_test]
+    async fn test_create_admin() {
+        let test_db = database::setup_test_db().await;
+        let rocket = App::default().with_pool(test_db.pool.clone()).rocket();
+        let client = Client::tracked(rocket).await.expect("valid rocket instance");
+
+        let response = client
+            .post("/admin")
+            .json(&json!({
+                "email": "test@example.com",
+                "password": "HelloWorld123!",
+            }))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::Ok);
+
+        let body = response.into_json::<Value>().await.expect("valid JSON");
+
+        assert_eq!(
+            body["admin"]["email"].as_str().expect("email is a string"),
+            "test@example.com",
+        );
+
+        let admin_repository = AdminRepository::new(test_db.pool.clone());
+        assert!(admin_repository.find_one("test@example.com".to_string()).await.unwrap().is_some())
     }
 }
