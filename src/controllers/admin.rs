@@ -64,6 +64,7 @@ mod tests {
     use rocket::http::Status;
     use rocket::local::asynchronous::Client;
     use rocket::serde::json::serde_json::json;
+    use rocket::serde::json::Value;
 
     use crate::app::App;
     use crate::database;
@@ -108,5 +109,40 @@ mod tests {
             .await;
 
         assert_eq!(response.status(), Status::BadRequest);
+    }
+
+    #[rocket::async_test]
+    async fn test_create_validation() {
+        let test_db = database::setup_test_db().await;
+        let rocket = App::default().with_pool(test_db.pool).rocket();
+        let client = Client::tracked(rocket).await.expect("valid rocket instance");
+
+        let response = client
+            .post("/admin")
+            .json(&json!({
+                "email": "testexample.com",
+                "password": "1",
+            }))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::UnprocessableEntity);
+
+        let body = response.into_json::<Value>().await.expect("valid JSON");
+        println!("{body:?}");
+
+        assert_eq!(
+            body["errors"]["email"][0]["message"]
+                .as_str()
+                .expect("error code is a string"),
+            "Email must be valid",
+        );
+
+        assert_eq!(
+            body["errors"]["password"][0]["message"]
+                .as_str()
+                .expect("error code is a string"),
+            "Password must be at least 8 characters long",
+        );
     }
 }
