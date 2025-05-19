@@ -9,8 +9,8 @@ pub enum AdminServiceError {
     #[error("{0}")]
     Repository(#[from] AdminRepositoryError),
 
-    #[error("The password provided is incorrect")]
-    IncorrectPassword,
+    #[error("The provided credentials is incorrect")]
+    InvalidCredentials,
 }
 
 pub struct AdminService {
@@ -26,13 +26,20 @@ impl AdminService {
         Ok(self.repo.create(email, password).await?)
     }
 
-    pub async fn authenticate(&self, email: String, password: String) -> Result<(), AdminServiceError> {
-        let admin = self.repo.find_one(email).await?;
+    pub async fn find_one(&self, email: String) -> Result<Option<Admin>, AdminServiceError> {
+        Ok(self.repo.find_one(email).await?)
+    }
 
-        let hashed = PasswordHash::new(&admin.password).unwrap();
-        Argon2::default()
-            .verify_password(password.as_bytes(), &hashed)
-            .map_err(|_| AdminServiceError::IncorrectPassword)
+    pub async fn authenticate(&self, email: String, password: String) -> Result<(), AdminServiceError> {
+        match self.repo.find_one(email).await? {
+            Some(admin) => {
+                let hashed = PasswordHash::new(&admin.password).unwrap();
+                Argon2::default()
+                    .verify_password(password.as_bytes(), &hashed)
+                    .map_err(|_| AdminServiceError::InvalidCredentials)
+            }
+            None => Err(AdminServiceError::InvalidCredentials)
+        }
     }
 }
 

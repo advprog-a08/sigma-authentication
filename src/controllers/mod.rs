@@ -1,10 +1,54 @@
-use rocket::routes;
+use rocket::serde::json::Json;
+use rocket::serde::Serialize;
+use rocket::{routes, Responder};
 use rocket::fairing::AdHoc;
+use validator::ValidationErrors;
 
+pub mod admin;
 pub mod home;
 
 pub fn route_stage() -> AdHoc {
     AdHoc::on_ignite("Initializing controller routes...", |rocket| async {
-        rocket.mount("/", routes![home::index])
+        rocket
+            .mount("/", routes![home::index])
+            .mount("/admin", routes![admin::login, admin::create])
     })
+}
+
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct GeneralErrorResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct ValidationErrorResponse {
+    pub errors: ValidationErrors,
+}
+
+#[derive(Responder)]
+pub enum ApiResponse<T> {
+    #[response(status = 200)]
+    Success(Json<T>),
+
+    #[response(status = 400)]
+    GeneralError(Json<GeneralErrorResponse>),
+
+    #[response(status = 422)]
+    ValidationError(Json<ValidationErrorResponse>),
+}
+
+impl<T> ApiResponse<T> {
+    pub fn success(data: T) -> Self {
+        Self::Success(Json(data))
+    }
+
+    pub fn general_error(message: String) -> Self {
+        Self::GeneralError(Json(GeneralErrorResponse { message }))
+    }
+
+    pub fn validation_error(errors: ValidationErrors) -> Self {
+        Self::ValidationError(Json(ValidationErrorResponse { errors }))
+    }
 }
