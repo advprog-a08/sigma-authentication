@@ -6,12 +6,14 @@ use validator::ValidationErrors;
 
 pub mod admin;
 pub mod home;
+pub mod table_session;
 
 pub fn route_stage() -> AdHoc {
     AdHoc::on_ignite("Initializing controller routes...", |rocket| async {
         rocket
             .mount("/", routes![home::index])
             .mount("/admin", routes![admin::login, admin::create])
+            .mount("/table-session", routes![table_session::create_session])
     })
 }
 

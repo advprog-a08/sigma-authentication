@@ -2,8 +2,8 @@ use rocket::{Build, Rocket};
 use sqlx::PgPool;
 
 use crate::controllers::route_stage;
-use crate::service::{AdminService, TokenService};
-use crate::repository::AdminRepository;
+use crate::service::{AdminService, TableSessionService, TokenService};
+use crate::repository::{AdminRepository, TableSessionRepository};
 
 const SERVICE_NAME: &str = "sigma-authentication";
 const SECRET_KEY: &str = "asdf";
@@ -22,9 +22,13 @@ impl App {
 
         let token_service = TokenService::new(SERVICE_NAME.to_string(), SECRET_KEY.to_string());
 
+        let table_session_repository = TableSessionRepository::new(pool.clone());
+        let table_session_service = TableSessionService::new(table_session_repository);
+
         rocket::build()
             .manage(admin_service)
             .manage(token_service)
+            .manage(table_session_service)
             .attach(route_stage())
     }
 
