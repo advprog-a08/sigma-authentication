@@ -52,12 +52,20 @@ pub struct CreateSuccess {
 #[post("/", data = "<admin_data>")]
 pub async fn create(
     admin_data: Json<AdminCreate>,
+    admin_service: &State<AdminService>,
 ) -> ApiResponse<CreateSuccess> {
     if let Err(e) = admin_data.validate() {
         return ApiResponse::validation_error(e);
     }
 
-    ApiResponse::success(CreateSuccess {  })
+    match admin_service.find_one(admin_data.email.clone()).await {
+        Ok(None) => {
+            // create admin
+            ApiResponse::success(CreateSuccess {})
+        }
+        Ok(Some(_)) => ApiResponse::general_error("Email already exists".to_string()),
+        Err(e) => ApiResponse::general_error(e.to_string()),
+    }
 }
 
 #[cfg(test)]
@@ -130,7 +138,6 @@ mod tests {
         assert_eq!(response.status(), Status::UnprocessableEntity);
 
         let body = response.into_json::<Value>().await.expect("valid JSON");
-        println!("{body:?}");
 
         assert_eq!(
             body["errors"]["email"][0]["message"]
@@ -144,6 +151,35 @@ mod tests {
                 .as_str()
                 .expect("error code is a string"),
             "Password must be at least 8 characters long",
+        );
+    }
+
+    #[rocket::async_test]
+    async fn test_duplicate_email() {
+        let test_db = database::setup_test_db().await;
+
+        let admin_repository = AdminRepository::new(test_db.pool.clone());
+        admin_repository.create("test@example.com".to_string(), "password123".to_string()).await.unwrap();
+
+        let rocket = App::default().with_pool(test_db.pool).rocket();
+        let client = Client::tracked(rocket).await.expect("valid rocket instance");
+
+        let response = client
+            .post("/admin")
+            .json(&json!({
+                "email": "test@example.com",
+                "password": "HelloWorld123!",
+            }))
+            .dispatch()
+            .await;
+
+        assert_eq!(response.status(), Status::BadRequest);
+
+        let body = response.into_json::<Value>().await.expect("valid JSON");
+
+        assert_eq!(
+            body["message"].as_str().expect("message is a string"),
+            "Email already exists",
         );
     }
 }

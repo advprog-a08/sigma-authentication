@@ -46,7 +46,7 @@ impl AdminRepository {
         .await?)
     }
 
-    pub async fn find_one(&self, email: String) -> Result<Admin, AdminRepositoryError> {
+    pub async fn find_one(&self, email: String) -> Result<Option<Admin>, AdminRepositoryError> {
         Ok(query_as!(
             Admin,
             r#"
@@ -56,7 +56,7 @@ impl AdminRepository {
             "#,
             email
         )
-        .fetch_one(&self.pool)
+        .fetch_optional(&self.pool)
         .await?)
     }
 }
@@ -77,8 +77,8 @@ mod tests {
             "HelloWorld123".to_string(),
         ).await.unwrap();
 
-        let found = ar.find_one(admin.email.to_string()).await;
-        assert_ne!(found.unwrap().password, "HelloWorld123".to_string());
+        let Some(found) = ar.find_one(admin.email.to_string()).await.unwrap() else { panic!() };
+        assert_ne!(found.password, "HelloWorld123".to_string());
     }
 
     #[rocket::async_test]
@@ -91,7 +91,7 @@ mod tests {
             "HelloWorld123".to_string(),
         ).await.unwrap();
 
-        let found = ar.find_one(admin.email.to_string()).await;
-        assert_eq!(found.unwrap().email, "asdf@gmail.com");
+        let Some(found) = ar.find_one(admin.email.to_string()).await.unwrap() else { panic!() };
+        assert_eq!(found.email, "asdf@gmail.com");
     }
 }
