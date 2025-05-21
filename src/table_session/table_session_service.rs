@@ -43,7 +43,7 @@ impl TableSessionService {
 
 #[cfg(test)]
 mod tests {
-    use super::{TableSessionRepository, TableSessionRepositoryError, TableSessionService};
+    use super::{TableSessionRepository, TableSessionService};
     use crate::database::setup_test_db;
     use uuid::Uuid;
 

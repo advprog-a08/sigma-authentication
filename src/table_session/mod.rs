@@ -45,7 +45,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_table_session_success() {
+    async fn test_verify_table_session_success() {
         let test_db = database::setup_test_db().await;
         let table_session_repository = TableSessionRepository::new(test_db.pool.clone());
         let table_session_service = TableSessionService::new(table_session_repository);
@@ -57,14 +57,14 @@ mod tests {
 
         let session_id = response.into_inner().table_session.unwrap().id;
         let request = Request::new(proto::SessionIdRequest { session_id });
-        let response = table_session_grpc.get_table_session(request).await.unwrap();
+        let response = table_session_grpc.verify_table_session(request).await.unwrap();
 
         let table_session = response.into_inner().table_session.unwrap();
         assert_eq!(table_session.table_id, table_id);
     }
 
     #[tokio::test]
-    async fn test_get_table_session_fail() {
+    async fn test_verify_table_session_fail() {
         let test_db = database::setup_test_db().await;
         let table_session_repository = TableSessionRepository::new(test_db.pool.clone());
         let table_session_service = TableSessionService::new(table_session_repository);
@@ -72,7 +72,7 @@ mod tests {
 
         let session_id = Uuid::new_v4().to_string();
         let request = Request::new(proto::SessionIdRequest { session_id });
-        let response = table_session_grpc.get_table_session(request).await;
+        let response = table_session_grpc.verify_table_session(request).await;
 
         assert!(response.is_err());
         let status = response.unwrap_err();

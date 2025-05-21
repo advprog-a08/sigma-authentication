@@ -40,7 +40,7 @@ impl proto::table_session_service_server::TableSessionService for TableSessionGr
         }
     }
 
-    async fn get_table_session(
+    async fn verify_table_session(
         &self,
         request: Request<proto::SessionIdRequest>,
     ) -> Result<Response<proto::TableSessionResponse>, Status> {

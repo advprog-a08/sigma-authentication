@@ -4,7 +4,7 @@ package table_session;
 
 service TableSessionService {
   rpc CreateTableSession(TableIdRequest) returns (TableSessionResponse);
-  rpc GetTableSession(SessionIdRequest) returns (TableSessionResponse);
+  rpc VerifyTableSession(SessionIdRequest) returns (TableSessionResponse);
   rpc DeactivateTableSession(SessionIdRequest) returns (TableSessionResponse);
 }
 
