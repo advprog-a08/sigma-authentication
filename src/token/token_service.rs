@@ -1,10 +1,9 @@
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use rocket::serde::{Serialize, Deserialize};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(crate = "rocket::serde")]
 pub struct Claims {
     pub sub: String,
     pub exp: usize,
@@ -31,7 +30,7 @@ impl TokenService {
     pub fn new(service_name: String, secret: String) -> Self {
         let secret = secret.as_bytes();
 
-        Self { 
+        Self {
             service_name,
             decoding_key: DecodingKey::from_secret(secret),
             encoding_key: EncodingKey::from_secret(secret),
@@ -115,7 +114,10 @@ mod tests {
 
         let invalid_token = "this.is.not.valid".to_string();
 
-        assert!(matches!(service.decode_jwt(invalid_token), Err(TokenServiceError::JwtError(..))));
+        assert!(matches!(
+            service.decode_jwt(invalid_token),
+            Err(TokenServiceError::JwtError(..))
+        ));
     }
 
     #[test]
@@ -129,7 +131,10 @@ mod tests {
         parts[1] = "tampered_payload";
         let tampered_token = parts.join(".");
 
-        assert!(matches!(service.decode_jwt(tampered_token), Err(TokenServiceError::JwtError(..))));
+        assert!(matches!(
+            service.decode_jwt(tampered_token),
+            Err(TokenServiceError::JwtError(..))
+        ));
     }
 
     #[test]
@@ -140,7 +145,10 @@ mod tests {
         // simlate JWT created with different secret
         let fake_jwt = fake_service.create_jwt("test".to_string()).unwrap();
 
-        assert!(matches!(service.decode_jwt(fake_jwt), Err(TokenServiceError::JwtError(..))));
+        assert!(matches!(
+            service.decode_jwt(fake_jwt),
+            Err(TokenServiceError::JwtError(..))
+        ));
     }
 
     #[test]

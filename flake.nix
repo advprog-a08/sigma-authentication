@@ -15,6 +15,7 @@
         devShells.default = pkgs.mkShell {
           packages = [
             toolchain
+            pkgs.protobuf
             pkgs.openssl
             pkgs.pkg-config
             pkgs.sqlx-cli
