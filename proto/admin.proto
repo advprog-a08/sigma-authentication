@@ -3,8 +3,8 @@ syntax = "proto3";
 package admin;
 
 service AdminService {
-  rpc CreateAdmin(CreateAdminRequest) returns (CreateAdminResponse);
-  rpc LoginAdmin(LoginAdminRequest) returns (LoginAdminResponse);
+  rpc CreateAdmin(CreateAdminRequest) returns (AdminResponse);
+  rpc LoginAdmin(LoginAdminRequest) returns (TokenResponse);
 }
 
 message Admin {
@@ -16,15 +16,15 @@ message CreateAdminRequest {
   string password = 2;
 }
 
-message CreateAdminResponse {
-  Admin admin = 1;
-}
-
 message LoginAdminRequest {
   string email = 1;
   string password = 2;
 }
 
-message LoginAdminResponse {
+message AdminResponse {
+  Admin admin = 1;
+}
+
+message TokenResponse {
   string token = 1;
 }

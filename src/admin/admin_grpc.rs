@@ -21,7 +21,7 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
     async fn create_admin(
         &self,
         request: Request<proto::CreateAdminRequest>,
-    ) -> Result<Response<proto::CreateAdminResponse>, Status> {
+    ) -> Result<Response<proto::AdminResponse>, Status> {
         let create_req = ValidatedCreateAdminRequest::try_from(request.into_inner())?;
 
         match self.admin_service.find_one(create_req.email.clone()).await {
@@ -33,7 +33,7 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
                 {
                     Ok(admin) => {
                         let grpc_admin = proto::Admin { email: admin.email };
-                        Ok(Response::new(proto::CreateAdminResponse {
+                        Ok(Response::new(proto::AdminResponse {
                             admin: Some(grpc_admin),
                         }))
                     }
@@ -48,13 +48,13 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
     async fn login_admin(
         &self,
         request: Request<proto::LoginAdminRequest>,
-    ) -> Result<Response<proto::LoginAdminResponse>, Status> {
+    ) -> Result<Response<proto::TokenResponse>, Status> {
         let LoginAdminRequest { email, password } = request.into_inner();
 
         match self.admin_service.authenticate(email.clone(), password).await {
             Ok(_) => {
                 match self.token_service.create_jwt(email) {
-                    Ok(token) => Ok(Response::new(proto::LoginAdminResponse { token })),
+                    Ok(token) => Ok(Response::new(proto::TokenResponse { token })),
                     Err(_) => Err(Status::invalid_argument("Failed to create authentication token")),
                 }
             },
