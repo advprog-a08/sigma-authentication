@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package authentication;
+package admin;
 
 service AdminService {
   rpc CreateAdmin(CreateAdminRequest) returns (CreateAdminResponse);

@@ -1,3 +1,7 @@
+pub(crate) mod proto {
+    tonic::include_proto!("admin");
+}
+
 mod admin_grpc;
 mod admin_model;
 mod admin_repository;
@@ -12,9 +16,10 @@ pub use admin_service::*;
 mod tests {
     use tonic::Request;
 
-    use crate::{database, proto::{self, admin_service_server::AdminService as _}};
+    use crate::database;
 
     use super::*;
+    use super::proto::{self, admin_service_server::AdminService as _};
 
     #[tokio::test]
     async fn test_create_admin_success() {

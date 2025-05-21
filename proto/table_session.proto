@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package table_session;
+
+service TableSessionService {
+  rpc CreateTableSession(CreateTableSessionRequest) returns (CreateTableSessionResponse);
+}
+
+message CreateTableSessionRequest {
+  string table_id = 1;
+}
+
+message CreateTableSessionResponse {
+  string session_id = 1;
+}

@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use tonic::transport::Server;
 
 use crate::admin::{AdminGrpc, AdminRepository, AdminService};
-use crate::proto::admin_service_server::AdminServiceServer;
+use crate::admin::proto::admin_service_server::AdminServiceServer;
 
 #[derive(Default)]
 pub struct App {

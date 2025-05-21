@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
-use crate::proto;
+use super::proto;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AdminModel {

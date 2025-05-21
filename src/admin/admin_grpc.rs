@@ -1,8 +1,7 @@
 use tonic::{Request, Response, Status};
 
 use super::{AdminService, ValidatedCreateAdminRequest};
-
-use crate::proto;
+use super::proto;
 
 pub struct AdminGrpc {
     admin_service: AdminService,
