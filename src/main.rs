@@ -1,8 +1,10 @@
-use sigma_authentication::database::setup_db;
-use sigma_authentication::app::App;
+use std::error::Error;
 
-#[rocket::main]
-async fn main() -> Result<(), rocket::Error> {
+use sigma_authentication::app::App;
+use sigma_authentication::database::setup_db;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let _ = dotenvy::dotenv();
     let pool = setup_db().await;
 
@@ -12,5 +14,7 @@ async fn main() -> Result<(), rocket::Error> {
         .expect("Failed to migrate!");
 
     let app = App::default().with_pool(pool);
-    app.launch().await
+    app.run("[::1]:50051").await?;
+
+    Ok(())
 }

@@ -1,7 +1,7 @@
 use argon2::Argon2;
-use password_hash::{PasswordHasher, SaltString};
 use password_hash::rand_core::OsRng;
-use sqlx::{query_as, PgPool};
+use password_hash::{PasswordHasher, SaltString};
+use sqlx::{PgPool, query_as};
 use thiserror::Error;
 
 use crate::models::Admin;
@@ -25,7 +25,11 @@ impl AdminRepository {
         Self { pool }
     }
 
-    pub async fn create(&self, email: String, password: String) -> Result<Admin, AdminRepositoryError> {
+    pub async fn create(
+        &self,
+        email: String,
+        password: String,
+    ) -> Result<Admin, AdminRepositoryError> {
         let salt = SaltString::generate(&mut OsRng);
         let password = Argon2::default()
             .hash_password(password.as_bytes(), &salt)
@@ -67,31 +71,35 @@ mod tests {
 
     use super::*;
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_hash_password() {
         let test_db = setup_test_db().await;
 
         let ar = AdminRepository::new(test_db.pool);
-        let admin = ar.create(
-            "asdf@gmail.com".to_string(),
-            "HelloWorld123".to_string(),
-        ).await.unwrap();
+        let admin = ar
+            .create("asdf@gmail.com".to_string(), "HelloWorld123".to_string())
+            .await
+            .unwrap();
 
-        let Some(found) = ar.find_one(admin.email.to_string()).await.unwrap() else { panic!() };
+        let Some(found) = ar.find_one(admin.email.to_string()).await.unwrap() else {
+            panic!()
+        };
         assert_ne!(found.password, "HelloWorld123".to_string());
     }
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_create_and_find_one() {
         let test_db = setup_test_db().await;
 
         let ar = AdminRepository::new(test_db.pool);
-        let admin = ar.create(
-            "asdf@gmail.com".to_string(),
-            "HelloWorld123".to_string(),
-        ).await.unwrap();
+        let admin = ar
+            .create("asdf@gmail.com".to_string(), "HelloWorld123".to_string())
+            .await
+            .unwrap();
 
-        let Some(found) = ar.find_one(admin.email.to_string()).await.unwrap() else { panic!() };
+        let Some(found) = ar.find_one(admin.email.to_string()).await.unwrap() else {
+            panic!()
+        };
         assert_eq!(found.email, "asdf@gmail.com");
     }
 }

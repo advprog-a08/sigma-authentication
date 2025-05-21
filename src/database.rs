@@ -1,11 +1,10 @@
 use std::env;
 
-use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::{Pool, Postgres};
 
 pub async fn setup_db() -> Pool<Postgres> {
-    let db_url = env::var("DATABASE_URL")
-        .expect("Unable to read DATABASE_URL!");
+    let db_url = env::var("DATABASE_URL").expect("Unable to read DATABASE_URL!");
 
     PgPoolOptions::new()
         .max_connections(5)
@@ -51,5 +50,8 @@ pub async fn setup_test_db() -> TestDb {
         .await
         .expect("Failed to run migrations");
 
-    TestDb { pool, _container: node }
+    TestDb {
+        pool,
+        _container: node,
+    }
 }

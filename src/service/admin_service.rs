@@ -22,7 +22,11 @@ impl AdminService {
         Self { repo }
     }
 
-    pub async fn register_admin(&self, email: String, password: String) -> Result<Admin, AdminServiceError> {
+    pub async fn register_admin(
+        &self,
+        email: String,
+        password: String,
+    ) -> Result<Admin, AdminServiceError> {
         Ok(self.repo.create(email, password).await?)
     }
 
@@ -30,7 +34,11 @@ impl AdminService {
         Ok(self.repo.find_one(email).await?)
     }
 
-    pub async fn authenticate(&self, email: String, password: String) -> Result<(), AdminServiceError> {
+    pub async fn authenticate(
+        &self,
+        email: String,
+        password: String,
+    ) -> Result<(), AdminServiceError> {
         match self.repo.find_one(email).await? {
             Some(admin) => {
                 let hashed = PasswordHash::new(&admin.password).unwrap();
@@ -38,22 +46,22 @@ impl AdminService {
                     .verify_password(password.as_bytes(), &hashed)
                     .map_err(|_| AdminServiceError::InvalidCredentials)
             }
-            None => Err(AdminServiceError::InvalidCredentials)
+            None => Err(AdminServiceError::InvalidCredentials),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::repository::AdminRepository;
     use crate::database::setup_test_db;
+    use crate::repository::AdminRepository;
 
     use super::AdminService;
 
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_register_admin() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
@@ -67,7 +75,7 @@ mod tests {
         assert_eq!(result.email, EMAIL.to_string());
     }
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_authenticate_correct() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();
@@ -82,7 +90,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_authenticate_incorrect() {
         let email = EMAIL.to_string();
         let password = PASSWORD.to_string();

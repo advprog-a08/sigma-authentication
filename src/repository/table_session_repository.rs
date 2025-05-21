@@ -1,4 +1,4 @@
-use sqlx::{query_as, PgPool};
+use sqlx::{PgPool, query_as};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -19,7 +19,10 @@ impl TableSessionRepository {
         Self { pool }
     }
 
-    pub async fn create(&self, table_id: Uuid) -> Result<TableSession, TableSessionRepositoryError> {
+    pub async fn create(
+        &self,
+        table_id: Uuid,
+    ) -> Result<TableSession, TableSessionRepositoryError> {
         Ok(query_as!(
             TableSession,
             r#"
@@ -33,7 +36,10 @@ impl TableSessionRepository {
         .await?)
     }
 
-    pub async fn find_by_id(&self, id: Uuid) -> Result<Option<TableSession>, TableSessionRepositoryError> {
+    pub async fn find_by_id(
+        &self,
+        id: Uuid,
+    ) -> Result<Option<TableSession>, TableSessionRepositoryError> {
         Ok(query_as!(
             TableSession,
             r#"
@@ -65,77 +71,81 @@ impl TableSessionRepository {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-    use crate::database::setup_test_db;
     use super::*;
+    use crate::database::setup_test_db;
+    use uuid::Uuid;
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_create_table_session() {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let table_id = Uuid::new_v4();
-        
+
         let session = tsr.create(table_id).await.unwrap();
-        
+
         assert_eq!(session.table_id, table_id);
         assert!(session.is_active);
     }
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_find_by_id() {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let table_id = Uuid::new_v4();
-        
+
         let created_session = tsr.create(table_id).await.unwrap();
-        let Some(found_session) = tsr.find_by_id(created_session.id).await.unwrap() else { panic!() };
-        
+        let Some(found_session) = tsr.find_by_id(created_session.id).await.unwrap() else {
+            panic!()
+        };
+
         assert_eq!(found_session.id, created_session.id);
         assert_eq!(found_session.table_id, table_id);
         assert!(found_session.is_active);
     }
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_deactivate_session() {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let table_id = Uuid::new_v4();
-        
+
         let created_session = tsr.create(table_id).await.unwrap();
         assert!(created_session.is_active);
-        
+
         let deactivated_session = tsr.deactivate(created_session.id).await.unwrap();
         assert_eq!(deactivated_session.id, created_session.id);
         assert!(!deactivated_session.is_active);
-        
+
         // Verify the session is indeed deactivated in the database
-        let Some(found_session) = tsr.find_by_id(created_session.id).await.unwrap() else { panic!() };
+        let Some(found_session) = tsr.find_by_id(created_session.id).await.unwrap() else {
+            panic!()
+        };
         assert!(!found_session.is_active);
     }
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_find_nonexistent_session() {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let random_id = Uuid::new_v4();
-        
+
         let result = tsr.find_by_id(random_id).await.unwrap();
         assert!(result.is_none());
     }
 
-    #[rocket::async_test]
+    #[tokio::test]
     async fn test_deactivate_nonexistent_session() {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let random_id = Uuid::new_v4();
-        
+
         let result = tsr.deactivate(random_id).await;
         assert!(result.is_err());
-        
+
         match result {
             Err(TableSessionRepositoryError::Database(e)) => {
                 assert!(e.to_string().contains("no rows returned"));
-            },
+            }
             _ => panic!("Expected Database error with no rows returned"),
         }
     }

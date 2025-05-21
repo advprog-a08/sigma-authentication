@@ -1,12 +1,12 @@
-use rocket::{Build, Rocket};
+use std::error::Error;
+
 use sqlx::PgPool;
+use tonic::transport::Server;
 
-use crate::controllers::route_stage;
-use crate::service::{AdminService, TableSessionService, TokenService};
-use crate::repository::{AdminRepository, TableSessionRepository};
-
-const SERVICE_NAME: &str = "sigma-authentication";
-const SECRET_KEY: &str = "asdf";
+use crate::grpc::admin::GrpcAdminService;
+use crate::grpc::proto::admin_service_server::AdminServiceServer;
+use crate::repository::AdminRepository;
+use crate::service::AdminService;
 
 #[derive(Default)]
 pub struct App {
@@ -14,30 +14,25 @@ pub struct App {
 }
 
 impl App {
-    pub fn rocket(self) -> Rocket<Build> {
-        let pool = self.pool.expect("`pool` not set!");
-
-        let admin_repository = AdminRepository::new(pool.clone());
-        let admin_service = AdminService::new(admin_repository);
-
-        let token_service = TokenService::new(SERVICE_NAME.to_string(), SECRET_KEY.to_string());
-
-        let table_session_repository = TableSessionRepository::new(pool.clone());
-        let table_session_service = TableSessionService::new(table_session_repository);
-
-        rocket::build()
-            .manage(admin_service)
-            .manage(token_service)
-            .manage(table_session_service)
-            .attach(route_stage())
-    }
-
     pub fn with_pool(mut self, pool: PgPool) -> Self {
         self.pool = Some(pool);
         self
     }
 
-    pub async fn launch(self) -> Result<(), rocket::Error> {
-        self.rocket().launch().await.map(|_| ())
+    pub async fn run(self, addr: &str) -> Result<(), Box<dyn Error>> {
+        let pool = self.pool.expect("`pool` not set!");
+        let addr = addr.parse()?;
+
+        let admin_repository = AdminRepository::new(pool.clone());
+        let admin_service = AdminService::new(admin_repository);
+
+        let grpc_admin_service = GrpcAdminService::new(admin_service);
+
+        Server::builder()
+            .add_service(AdminServiceServer::new(grpc_admin_service))
+            .serve(addr)
+            .await?;
+
+        Ok(())
     }
 }

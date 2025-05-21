@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package authentication;
+
+service AdminService {
+  rpc CreateAdmin(CreateAdminRequest) returns (CreateAdminResponse);
+}
+
+message Admin {
+  string email = 1;
+}
+
+message CreateAdminRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message CreateAdminResponse {
+  Admin admin = 1;
+}

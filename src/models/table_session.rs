@@ -1,9 +1,8 @@
 use chrono::{DateTime, Utc};
-use rocket::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(crate = "rocket::serde")]
 pub struct TableSession {
     pub id: Uuid,
     pub table_id: Uuid,
@@ -12,7 +11,6 @@ pub struct TableSession {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(crate = "rocket::serde")]
 pub struct TableSessionCreate {
     pub table_id: Uuid,
 }
