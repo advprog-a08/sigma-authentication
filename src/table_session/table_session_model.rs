@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use uuid::Uuid;
+
+use super::proto;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TableSessionModel {
@@ -10,7 +12,12 @@ pub struct TableSessionModel {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct TableSessionCreate {
-    pub table_id: Uuid,
+impl From<TableSessionModel> for proto::TableSession {
+    fn from(value: TableSessionModel) -> Self {
+        Self {
+            id: value.id.to_string(),
+            table_id: value.table_id.to_string(),
+            is_active: value.is_active,
+        }
+    }
 }
