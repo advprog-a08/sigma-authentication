@@ -54,7 +54,7 @@ impl AdminService {
 mod tests {
     use crate::database::setup_test_db;
 
-    use super::{AdminService, AdminRepository};
+    use super::{AdminRepository, AdminService};
 
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";

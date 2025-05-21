@@ -3,7 +3,7 @@ use std::error::Error;
 use sqlx::PgPool;
 use tonic::transport::Server;
 
-use crate::admin::{AdminRepository, GrpcAdminService, AdminService};
+use crate::admin::{AdminRepository, AdminService, GrpcAdminService};
 use crate::proto::admin_service_server::AdminServiceServer;
 
 #[derive(Default)]
