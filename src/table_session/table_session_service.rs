@@ -29,7 +29,7 @@ impl TableSessionService {
     pub async fn deactivate_session(
         &self,
         table_id: Uuid,
-    ) -> Result<TableSessionModel, TableSessionServiceError> {
+    ) -> Result<Option<TableSessionModel>, TableSessionServiceError> {
         Ok(self.repo.deactivate(table_id).await?)
     }
 
@@ -43,7 +43,7 @@ impl TableSessionService {
 
 #[cfg(test)]
 mod tests {
-    use super::{TableSessionRepository, TableSessionRepositoryError, TableSessionService};
+    use super::{TableSessionRepository, TableSessionService};
     use crate::database::setup_test_db;
     use uuid::Uuid;
 
@@ -91,6 +91,7 @@ mod tests {
         let deactivated_session = service
             .deactivate_session(created_session.id)
             .await
+            .unwrap()
             .unwrap();
 
         assert_eq!(deactivated_session.id, created_session.id);
@@ -106,15 +107,8 @@ mod tests {
 
         let result = service.deactivate_session(random_id).await;
 
-        assert!(result.is_err());
-        match result {
-            Err(super::TableSessionServiceError::Repository(
-                TableSessionRepositoryError::Database(e),
-            )) => {
-                assert!(e.to_string().contains("no rows returned"));
-            }
-            _ => panic!("Expected Repository error with no rows returned"),
-        }
+        let result = result.unwrap();
+        assert!(result.is_none());
     }
 
     #[tokio::test]

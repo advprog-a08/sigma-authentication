@@ -3,8 +3,9 @@ syntax = "proto3";
 package table_session;
 
 service TableSessionService {
-  rpc CreateTableSession(CreateTableSessionRequest) returns (CreateTableSessionResponse);
-  rpc GetTableSession(GetTableSessionRequest) returns (GetTableSessionResponse);
+  rpc CreateTableSession(TableIdRequest) returns (TableSessionResponse);
+  rpc VerifyTableSession(SessionIdRequest) returns (TableSessionResponse);
+  rpc DeactivateTableSession(SessionIdRequest) returns (TableSessionResponse);
 }
 
 message TableSession {
@@ -13,18 +14,14 @@ message TableSession {
   bool is_active = 3;
 }
 
-message CreateTableSessionRequest {
+message TableIdRequest {
   string table_id = 1;
 }
 
-message CreateTableSessionResponse {
+message SessionIdRequest {
   string session_id = 1;
 }
 
-message GetTableSessionRequest {
-  string session_id = 1;
-}
-
-message GetTableSessionResponse {
+message TableSessionResponse {
   TableSession table_session = 1;
 }

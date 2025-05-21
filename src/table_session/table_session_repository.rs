@@ -56,7 +56,7 @@ impl TableSessionRepository {
     pub async fn deactivate(
         &self,
         id: Uuid,
-    ) -> Result<TableSessionModel, TableSessionRepositoryError> {
+    ) -> Result<Option<TableSessionModel>, TableSessionRepositoryError> {
         Ok(query_as!(
             TableSessionModel,
             r#"
@@ -67,7 +67,7 @@ impl TableSessionRepository {
             "#,
             id
         )
-        .fetch_one(&self.pool)
+        .fetch_optional(&self.pool)
         .await?)
     }
 }
@@ -115,7 +115,7 @@ mod tests {
         let created_session = tsr.create(table_id).await.unwrap();
         assert!(created_session.is_active);
 
-        let deactivated_session = tsr.deactivate(created_session.id).await.unwrap();
+        let deactivated_session = tsr.deactivate(created_session.id).await.unwrap().unwrap();
         assert_eq!(deactivated_session.id, created_session.id);
         assert!(!deactivated_session.is_active);
 
@@ -142,14 +142,7 @@ mod tests {
         let tsr = TableSessionRepository::new(test_db.pool);
         let random_id = Uuid::new_v4();
 
-        let result = tsr.deactivate(random_id).await;
-        assert!(result.is_err());
-
-        match result {
-            Err(TableSessionRepositoryError::Database(e)) => {
-                assert!(e.to_string().contains("no rows returned"));
-            }
-            _ => panic!("Expected Database error with no rows returned"),
-        }
+        let result = tsr.deactivate(random_id).await.unwrap();
+        assert!(result.is_none());
     }
 }
