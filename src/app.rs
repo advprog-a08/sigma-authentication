@@ -5,6 +5,7 @@ use tonic::transport::Server;
 
 use crate::admin::{AdminGrpc, AdminRepository, AdminService};
 use crate::admin::proto::admin_service_server::AdminServiceServer;
+use crate::token::TokenService;
 
 #[derive(Default)]
 pub struct App {
@@ -23,7 +24,10 @@ impl App {
 
         let admin_repository = AdminRepository::new(pool.clone());
         let admin_service = AdminService::new(admin_repository);
-        let admin_grpc = AdminGrpc::new(admin_service);
+
+        let token_service = TokenService::new("asdf".to_string(), "asdf".to_string());
+
+        let admin_grpc = AdminGrpc::new(admin_service, token_service);
 
         Server::builder()
             .add_service(AdminServiceServer::new(admin_grpc))
