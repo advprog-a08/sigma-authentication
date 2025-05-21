@@ -1,8 +1,7 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use thiserror::Error;
 
-use crate::models::Admin;
-use crate::repository::{AdminRepository, AdminRepositoryError};
+use super::{Admin, AdminRepository, AdminRepositoryError};
 
 #[derive(Error, Debug)]
 pub enum AdminServiceError {
@@ -54,9 +53,8 @@ impl AdminService {
 #[cfg(test)]
 mod tests {
     use crate::database::setup_test_db;
-    use crate::repository::AdminRepository;
 
-    use super::AdminService;
+    use super::{AdminService, AdminRepository};
 
     const EMAIL: &str = "asdf@gmail.com";
     const PASSWORD: &str = "helloworld123";

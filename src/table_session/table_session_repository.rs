@@ -2,7 +2,7 @@ use sqlx::{PgPool, query_as};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::models::TableSession;
+use super::TableSession;
 
 #[derive(Error, Debug)]
 pub enum TableSessionRepositoryError {

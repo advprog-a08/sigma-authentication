@@ -1,8 +1,7 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::models::TableSession;
-use crate::repository::{TableSessionRepository, TableSessionRepositoryError};
+use super::{TableSession, TableSessionRepository, TableSessionRepositoryError};
 
 #[derive(Error, Debug)]
 pub enum TableSessionServiceError {
@@ -44,9 +43,8 @@ impl TableSessionService {
 
 #[cfg(test)]
 mod tests {
-    use super::TableSessionService;
+    use super::{TableSessionRepositoryError, TableSessionService, TableSessionRepository};
     use crate::database::setup_test_db;
-    use crate::repository::TableSessionRepository;
     use uuid::Uuid;
 
     #[tokio::test]
@@ -111,7 +109,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(super::TableSessionServiceError::Repository(
-                crate::repository::TableSessionRepositoryError::Database(e),
+                TableSessionRepositoryError::Database(e),
             )) => {
                 assert!(e.to_string().contains("no rows returned"));
             }

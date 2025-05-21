@@ -1,8 +1,8 @@
 use tonic::{Request, Response, Status};
 
-use crate::service::AdminService;
+use super::AdminService;
 
-use super::proto::{
+use crate::proto::{
     Admin, CreateAdminRequest, CreateAdminResponse,
     admin_service_server::AdminService as AdminServiceGrpc,
 };

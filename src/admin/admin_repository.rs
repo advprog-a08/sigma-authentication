@@ -4,7 +4,7 @@ use password_hash::{PasswordHasher, SaltString};
 use sqlx::{PgPool, query_as};
 use thiserror::Error;
 
-use crate::models::Admin;
+use super::Admin;
 
 #[derive(Error, Debug)]
 pub enum AdminRepositoryError {

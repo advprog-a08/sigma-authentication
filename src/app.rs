@@ -3,10 +3,8 @@ use std::error::Error;
 use sqlx::PgPool;
 use tonic::transport::Server;
 
-use crate::grpc::admin::GrpcAdminService;
-use crate::grpc::proto::admin_service_server::AdminServiceServer;
-use crate::repository::AdminRepository;
-use crate::service::AdminService;
+use crate::admin::{AdminRepository, GrpcAdminService, AdminService};
+use crate::proto::admin_service_server::AdminServiceServer;
 
 #[derive(Default)]
 pub struct App {
