@@ -1,6 +1,6 @@
 FROM rust:1.86-alpine AS builder
 
-RUN apk add --no-cache musl-dev gcc make pkgconfig openssl-dev openssl-libs-static
+RUN apk add --no-cache musl-dev gcc make pkgconfig openssl-dev openssl-libs-static protoc
 
 WORKDIR /app
 
@@ -19,9 +19,6 @@ WORKDIR /app
 
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/sigma-authentication .
 
-ENV ROCKET_ENV=production
-ENV ROCKET_ADDRESS=0.0.0.0
-
-EXPOSE 8000
+EXPOSE 50051
 
 CMD [ "./sigma-authentication" ]
