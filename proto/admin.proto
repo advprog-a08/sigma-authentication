@@ -4,7 +4,9 @@ package admin;
 
 service AdminService {
   rpc CreateAdmin(CreateAdminRequest) returns (AdminResponse);
+
   rpc LoginAdmin(LoginAdminRequest) returns (TokenResponse);
+  rpc VerifyAdmin(TokenRequest) returns (AdminResponse);
 }
 
 message Admin {
@@ -19,6 +21,10 @@ message CreateAdminRequest {
 message LoginAdminRequest {
   string email = 1;
   string password = 2;
+}
+
+message TokenRequest {
+  string token = 1;
 }
 
 message AdminResponse {
