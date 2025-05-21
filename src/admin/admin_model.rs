@@ -11,6 +11,12 @@ pub struct AdminModel {
     pub password: String,
 }
 
+impl Into<proto::Admin> for AdminModel {
+    fn into(self) -> proto::Admin {
+        proto::Admin { email: self.email }
+    }
+}
+
 #[derive(Debug, Validate, Deserialize)]
 pub struct ValidatedCreateAdminRequest {
     #[validate(email(message = "Email must be valid"))]
