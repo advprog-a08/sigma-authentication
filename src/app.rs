@@ -3,7 +3,7 @@ use std::error::Error;
 use sqlx::PgPool;
 use tonic::transport::Server;
 
-use crate::admin::{AdminRepository, AdminService, GrpcAdminService};
+use crate::admin::{AdminGrpc, AdminRepository, AdminService};
 use crate::proto::admin_service_server::AdminServiceServer;
 
 #[derive(Default)]
@@ -23,11 +23,10 @@ impl App {
 
         let admin_repository = AdminRepository::new(pool.clone());
         let admin_service = AdminService::new(admin_repository);
-
-        let grpc_admin_service = GrpcAdminService::new(admin_service);
+        let admin_grpc = AdminGrpc::new(admin_service);
 
         Server::builder()
-            .add_service(AdminServiceServer::new(grpc_admin_service))
+            .add_service(AdminServiceServer::new(admin_grpc))
             .serve(addr)
             .await?;
 

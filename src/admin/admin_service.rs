@@ -1,7 +1,7 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use thiserror::Error;
 
-use super::{Admin, AdminRepository, AdminRepositoryError};
+use super::{AdminModel, AdminRepository, AdminRepositoryError};
 
 #[derive(Error, Debug)]
 pub enum AdminServiceError {
@@ -25,11 +25,11 @@ impl AdminService {
         &self,
         email: String,
         password: String,
-    ) -> Result<Admin, AdminServiceError> {
+    ) -> Result<AdminModel, AdminServiceError> {
         Ok(self.repo.create(email, password).await?)
     }
 
-    pub async fn find_one(&self, email: String) -> Result<Option<Admin>, AdminServiceError> {
+    pub async fn find_one(&self, email: String) -> Result<Option<AdminModel>, AdminServiceError> {
         Ok(self.repo.find_one(email).await?)
     }
 

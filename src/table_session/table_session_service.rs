@@ -1,7 +1,7 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use super::{TableSession, TableSessionRepository, TableSessionRepositoryError};
+use super::{TableSessionModel, TableSessionRepository, TableSessionRepositoryError};
 
 #[derive(Error, Debug)]
 pub enum TableSessionServiceError {
@@ -21,7 +21,7 @@ impl TableSessionService {
     pub async fn create_session(
         &self,
         table_id: Uuid,
-    ) -> Result<TableSession, TableSessionServiceError> {
+    ) -> Result<TableSessionModel, TableSessionServiceError> {
         // TODO: Check if table_id is already taken
         Ok(self.repo.create(table_id).await?)
     }
@@ -29,14 +29,14 @@ impl TableSessionService {
     pub async fn deactivate_session(
         &self,
         table_id: Uuid,
-    ) -> Result<TableSession, TableSessionServiceError> {
+    ) -> Result<TableSessionModel, TableSessionServiceError> {
         Ok(self.repo.deactivate(table_id).await?)
     }
 
     pub async fn find_by_id(
         &self,
         id: Uuid,
-    ) -> Result<Option<TableSession>, TableSessionServiceError> {
+    ) -> Result<Option<TableSessionModel>, TableSessionServiceError> {
         Ok(self.repo.find_by_id(id).await?)
     }
 }

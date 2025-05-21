@@ -2,7 +2,7 @@ use sqlx::{PgPool, query_as};
 use thiserror::Error;
 use uuid::Uuid;
 
-use super::TableSession;
+use super::TableSessionModel;
 
 #[derive(Error, Debug)]
 pub enum TableSessionRepositoryError {
@@ -22,9 +22,9 @@ impl TableSessionRepository {
     pub async fn create(
         &self,
         table_id: Uuid,
-    ) -> Result<TableSession, TableSessionRepositoryError> {
+    ) -> Result<TableSessionModel, TableSessionRepositoryError> {
         Ok(query_as!(
-            TableSession,
+            TableSessionModel,
             r#"
             INSERT INTO table_sessions (table_id)
             VALUES ($1)
@@ -39,9 +39,9 @@ impl TableSessionRepository {
     pub async fn find_by_id(
         &self,
         id: Uuid,
-    ) -> Result<Option<TableSession>, TableSessionRepositoryError> {
+    ) -> Result<Option<TableSessionModel>, TableSessionRepositoryError> {
         Ok(query_as!(
-            TableSession,
+            TableSessionModel,
             r#"
             SELECT *
             FROM table_sessions
@@ -53,9 +53,12 @@ impl TableSessionRepository {
         .await?)
     }
 
-    pub async fn deactivate(&self, id: Uuid) -> Result<TableSession, TableSessionRepositoryError> {
+    pub async fn deactivate(
+        &self,
+        id: Uuid,
+    ) -> Result<TableSessionModel, TableSessionRepositoryError> {
         Ok(query_as!(
-            TableSession,
+            TableSessionModel,
             r#"
             UPDATE table_sessions
             SET is_active = FALSE

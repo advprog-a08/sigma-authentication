@@ -2,27 +2,24 @@ use tonic::{Request, Response, Status};
 
 use super::AdminService;
 
-use crate::proto::{
-    Admin, CreateAdminRequest, CreateAdminResponse,
-    admin_service_server::AdminService as AdminServiceGrpc,
-};
+use crate::proto;
 
-pub struct GrpcAdminService {
+pub struct AdminGrpc {
     admin_service: AdminService,
 }
 
-impl GrpcAdminService {
+impl AdminGrpc {
     pub fn new(admin_service: AdminService) -> Self {
         Self { admin_service }
     }
 }
 
 #[tonic::async_trait]
-impl AdminServiceGrpc for GrpcAdminService {
+impl proto::admin_service_server::AdminService for AdminGrpc {
     async fn create_admin(
         &self,
-        request: Request<CreateAdminRequest>,
-    ) -> Result<Response<CreateAdminResponse>, Status> {
+        request: Request<proto::CreateAdminRequest>,
+    ) -> Result<Response<proto::CreateAdminResponse>, Status> {
         let create_req = request.into_inner();
 
         match self.admin_service.find_one(create_req.email.clone()).await {
@@ -33,8 +30,8 @@ impl AdminServiceGrpc for GrpcAdminService {
                     .await
                 {
                     Ok(admin) => {
-                        let grpc_admin = Admin { email: admin.email };
-                        Ok(Response::new(CreateAdminResponse {
+                        let grpc_admin = proto::Admin { email: admin.email };
+                        Ok(Response::new(proto::CreateAdminResponse {
                             admin: Some(grpc_admin),
                         }))
                     }

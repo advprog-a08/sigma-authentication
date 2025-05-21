@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Clone, Serialize)]
-pub struct Admin {
+pub struct AdminModel {
     pub email: String,
     pub password: String,
 }

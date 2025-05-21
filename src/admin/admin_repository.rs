@@ -4,7 +4,7 @@ use password_hash::{PasswordHasher, SaltString};
 use sqlx::{PgPool, query_as};
 use thiserror::Error;
 
-use super::Admin;
+use super::AdminModel;
 
 #[derive(Error, Debug)]
 pub enum AdminRepositoryError {
@@ -29,7 +29,7 @@ impl AdminRepository {
         &self,
         email: String,
         password: String,
-    ) -> Result<Admin, AdminRepositoryError> {
+    ) -> Result<AdminModel, AdminRepositoryError> {
         let salt = SaltString::generate(&mut OsRng);
         let password = Argon2::default()
             .hash_password(password.as_bytes(), &salt)
@@ -37,7 +37,7 @@ impl AdminRepository {
             .to_string();
 
         Ok(query_as!(
-            Admin,
+            AdminModel,
             r#"
             INSERT INTO admins (email, password)
             VALUES ($1, $2)
@@ -50,9 +50,12 @@ impl AdminRepository {
         .await?)
     }
 
-    pub async fn find_one(&self, email: String) -> Result<Option<Admin>, AdminRepositoryError> {
+    pub async fn find_one(
+        &self,
+        email: String,
+    ) -> Result<Option<AdminModel>, AdminRepositoryError> {
         Ok(query_as!(
-            Admin,
+            AdminModel,
             r#"
             SELECT email, password
             FROM admins
