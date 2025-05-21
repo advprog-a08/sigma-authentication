@@ -59,5 +59,23 @@ mod tests {
         assert_eq!(status.message(), "Email already exists");
     }
 
-    // TODO: validation
+    #[tokio::test]
+    async fn test_create_admin_validation() {
+        let test_db = database::setup_test_db().await;
+        let admin_repository = AdminRepository::new(test_db.pool.clone());
+        let admin_service = AdminService::new(admin_repository);
+        let admin_grpc = AdminGrpc::new(admin_service);
+
+        let request = Request::new(proto::CreateAdminRequest {
+            email: "testexample.com".to_string(),
+            password: "HelloWorld123!".to_string(),
+        });
+
+        let result = admin_grpc.create_admin(request).await;
+
+        assert!(result.is_err());
+        let status = result.unwrap_err();
+        assert_eq!(status.code(), tonic::Code::InvalidArgument);
+        assert_eq!(status.message(), "Validation failed: email: Email must be valid");
+    }
 }

@@ -1,6 +1,6 @@
 use tonic::{Request, Response, Status};
 
-use super::AdminService;
+use super::{AdminService, ValidatedCreateAdminRequest};
 
 use crate::proto;
 
@@ -20,7 +20,7 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
         &self,
         request: Request<proto::CreateAdminRequest>,
     ) -> Result<Response<proto::CreateAdminResponse>, Status> {
-        let create_req = request.into_inner();
+        let create_req = ValidatedCreateAdminRequest::try_from(request.into_inner())?;
 
         match self.admin_service.find_one(create_req.email.clone()).await {
             Ok(None) => {

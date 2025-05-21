@@ -3,6 +3,8 @@ use std::borrow::Cow;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
+use crate::proto;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct AdminModel {
     pub email: String,
@@ -10,7 +12,7 @@ pub struct AdminModel {
 }
 
 #[derive(Debug, Validate, Deserialize)]
-pub struct AdminCreate {
+pub struct ValidatedCreateAdminRequest {
     #[validate(email(message = "Email must be valid"))]
     pub email: String,
 
@@ -52,4 +54,21 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     }
 
     Ok(())
+}
+
+impl TryFrom<proto::CreateAdminRequest> for ValidatedCreateAdminRequest {
+    type Error = tonic::Status;
+
+    fn try_from(value: proto::CreateAdminRequest) -> Result<Self, Self::Error> {
+        let v = ValidatedCreateAdminRequest {
+            email: value.email,
+            password: value.password,
+        };
+
+        v.validate().map_err(|e| {
+            tonic::Status::invalid_argument(format!("Validation failed: {}", e))
+        })?;
+
+        Ok(v)
+    }
 }
