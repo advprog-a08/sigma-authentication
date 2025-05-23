@@ -28,6 +28,7 @@ impl AdminRepository {
     pub async fn create(
         &self,
         email: String,
+        name: String,
         password: String,
     ) -> Result<AdminModel, AdminRepositoryError> {
         let salt = SaltString::generate(&mut OsRng);
@@ -39,11 +40,12 @@ impl AdminRepository {
         Ok(query_as!(
             AdminModel,
             r#"
-            INSERT INTO admins (email, password)
-            VALUES ($1, $2)
-            RETURNING email, password
+            INSERT INTO admins (email, name, password)
+            VALUES ($1, $2, $3)
+            RETURNING email, name, password
             "#,
             email,
+            name,
             password
         )
         .fetch_one(&self.pool)
@@ -57,7 +59,7 @@ impl AdminRepository {
         Ok(query_as!(
             AdminModel,
             r#"
-            SELECT email, password
+            SELECT email, name, password
             FROM admins
             WHERE email = $1;
             "#,
@@ -65,6 +67,44 @@ impl AdminRepository {
         )
         .fetch_optional(&self.pool)
         .await?)
+    }
+
+    pub async fn update_one(
+        &self,
+        email: String,
+        name: String,
+    ) -> Result<Option<AdminModel>, AdminRepositoryError> {
+        Ok(query_as!(
+            AdminModel,
+            r#"
+            UPDATE admins
+            SET name = $1
+            WHERE email = $2
+            RETURNING email, name, password
+            "#,
+            name,
+            email
+        )
+        .fetch_optional(&self.pool)
+        .await?)
+    }
+
+    pub async fn delete_one(
+        &self,
+        email: String,
+    ) -> Result<(), AdminRepositoryError> {
+        query_as!(
+            AdminModel,
+            r#"
+            DELETE FROM admins
+            WHERE email = $1
+            "#,
+            email
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
     }
 }
 
@@ -80,7 +120,11 @@ mod tests {
 
         let ar = AdminRepository::new(test_db.pool);
         let admin = ar
-            .create("asdf@gmail.com".to_string(), "HelloWorld123".to_string())
+            .create(
+                "asdf@gmail.com".to_string(),
+                "asdf".to_string(),
+                "HelloWorld123".to_string(),
+            )
             .await
             .unwrap();
 
@@ -96,7 +140,11 @@ mod tests {
 
         let ar = AdminRepository::new(test_db.pool);
         let admin = ar
-            .create("asdf@gmail.com".to_string(), "HelloWorld123".to_string())
+            .create(
+                "asdf@gmail.com".to_string(),
+                "asdf".to_string(),
+                "HelloWorld123".to_string(),
+            )
             .await
             .unwrap();
 
@@ -104,5 +152,52 @@ mod tests {
             panic!()
         };
         assert_eq!(found.email, "asdf@gmail.com");
+    }
+    
+    #[tokio::test]
+    async fn test_create_and_update_one() {
+        let test_db = setup_test_db().await;
+
+        let ar = AdminRepository::new(test_db.pool);
+        let admin = ar
+            .create(
+                "asdf@gmail.com".to_string(),
+                "asdf".to_string(),
+                "HelloWorld123".to_string(),
+            )
+            .await
+            .unwrap();
+
+        let Some(updated) = ar.update_one(admin.email.clone(), "ASDF".to_string()).await.unwrap() else {
+            panic!()
+        };
+
+        assert_eq!(updated.name, "ASDF".to_string());
+
+        let Some(found) = ar.find_one(admin.email).await.unwrap() else {
+            panic!()
+        };
+
+        assert_eq!(found.name, "ASDF".to_string());
+    }
+
+    #[tokio::test]
+    async fn test_create_and_delete_one() {
+        let test_db = setup_test_db().await;
+
+        let ar = AdminRepository::new(test_db.pool);
+        let admin = ar
+            .create(
+                "asdf@gmail.com".to_string(),
+                "asdf".to_string(),
+                "HelloWorld123".to_string(),
+            )
+            .await
+            .unwrap();
+
+        ar.delete_one(admin.email.clone()).await.unwrap();
+
+        let found = ar.find_one(admin.email).await.unwrap();
+        assert!(found.is_none());
     }
 }

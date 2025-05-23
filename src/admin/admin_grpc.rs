@@ -2,7 +2,7 @@ use tonic::{Request, Response, Status};
 
 use crate::token::TokenService;
 
-use super::{AdminService, ValidatedCreateAdminRequest};
+use super::{AdminService, ValidatedCreateAdminRequest, ValidatedUpdateAdminRequest};
 use super::proto::{self, LoginAdminRequest};
 
 pub struct AdminGrpc {
@@ -28,7 +28,7 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
             Ok(None) => {
                 match self
                     .admin_service
-                    .register_admin(create_req.email, create_req.password)
+                    .register_admin(create_req.email, create_req.name, create_req.password)
                     .await
                 {
                     Ok(admin) => {
@@ -82,5 +82,59 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
             .ok_or_else(|| Status::not_found("Admin not found"))?;
 
         Ok(Response::new(proto::AdminResponse { admin: Some(admin.into()) }))
+    }
+
+    async fn update_admin(
+        &self,
+        request: Request<proto::UpdateAdminRequest>
+    ) -> Result<Response<proto::AdminResponse>, Status> {
+        let req = ValidatedUpdateAdminRequest::try_from(request.into_inner())?;
+
+        let claims = self
+            .token_service
+            .decode_jwt(req.token)
+            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        
+        let admin = self
+            .admin_service
+            .find_one(claims.sub)
+            .await
+            .map_err(|e| Status::invalid_argument(e.to_string()))?
+            .ok_or_else(|| Status::not_found("Admin not found"))?;
+
+        let admin = self
+            .admin_service
+            .update_one(admin.email, req.new_name)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?
+            .ok_or_else(|| Status::not_found("Admin not found"))?;
+
+        Ok(Response::new(proto::AdminResponse { admin: Some(admin.into()) }))
+    }
+
+    async fn delete_admin(
+        &self,
+        request: Request<proto::DeleteAdminRequest>
+    ) -> Result<Response<()>, Status> {
+        let proto::DeleteAdminRequest { token } = request.into_inner();
+
+        let claims = self
+            .token_service
+            .decode_jwt(token)
+            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        
+        let admin = self
+            .admin_service
+            .find_one(claims.sub)
+            .await
+            .map_err(|e| Status::invalid_argument(e.to_string()))?
+            .ok_or_else(|| Status::not_found("Admin not found"))?;
+
+        self.admin_service
+            .delete_one(admin.email)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        Ok(Response::new(()))
     }
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT email, password\n            FROM admins\n            WHERE email = $1;\n            ",
+  "query": "\n            UPDATE admins\n            SET name = $1\n            WHERE email = $2\n            RETURNING email, name, password\n            ",
   "describe": {
     "columns": [
       {
@@ -10,19 +10,26 @@
       },
       {
         "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
         "name": "password",
         "type_info": "Varchar"
       }
     ],
     "parameters": {
       "Left": [
+        "Varchar",
         "Text"
       ]
     },
     "nullable": [
       false,
+      false,
       false
     ]
   },
-  "hash": "3ba84385cff10a844252cfaf724486e49d2cf6d27e34433127688181da084c41"
+  "hash": "1c217b3a3da750e749a82fa31a35ef869a473c82e8ca5a026fd45da7516c38f6"
 }

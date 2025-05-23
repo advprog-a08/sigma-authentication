@@ -8,6 +8,7 @@ use super::proto;
 #[derive(Debug, Clone, Serialize)]
 pub struct AdminModel {
     pub email: String,
+    pub name: String,
     pub password: String,
 }
 
@@ -22,8 +23,54 @@ pub struct ValidatedCreateAdminRequest {
     #[validate(email(message = "Email must be valid"))]
     pub email: String,
 
+    #[validate(length(max = 255))]
+    pub name: String,
+
     #[validate(custom(function = "validate_password"))]
     pub password: String,
+}
+
+impl TryFrom<proto::CreateAdminRequest> for ValidatedCreateAdminRequest {
+    type Error = tonic::Status;
+
+    fn try_from(value: proto::CreateAdminRequest) -> Result<Self, Self::Error> {
+        let v = ValidatedCreateAdminRequest {
+            email: value.email,
+            name: value.name,
+            password: value.password,
+        };
+
+        v.validate().map_err(|e| {
+            tonic::Status::invalid_argument(format!("Validation failed: {}", e))
+        })?;
+
+        Ok(v)
+    }
+}
+
+#[derive(Debug, Validate, Deserialize)]
+pub struct ValidatedUpdateAdminRequest {
+    #[validate(length(max = 255))]
+    pub new_name: String,
+
+    pub token: String,
+}
+
+impl TryFrom<proto::UpdateAdminRequest> for ValidatedUpdateAdminRequest {
+    type Error = tonic::Status;
+
+    fn try_from(value: proto::UpdateAdminRequest) -> Result<Self, Self::Error> {
+        let v = Self {
+            new_name: value.new_name,
+            token: value.token,
+        };
+
+        v.validate().map_err(|e| {
+            tonic::Status::invalid_argument(format!("Validation failed: {}", e))
+        })?;
+
+        Ok(v)
+    }
 }
 
 fn validate_password(password: &str) -> Result<(), ValidationError> {
@@ -60,21 +107,4 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     }
 
     Ok(())
-}
-
-impl TryFrom<proto::CreateAdminRequest> for ValidatedCreateAdminRequest {
-    type Error = tonic::Status;
-
-    fn try_from(value: proto::CreateAdminRequest) -> Result<Self, Self::Error> {
-        let v = ValidatedCreateAdminRequest {
-            email: value.email,
-            password: value.password,
-        };
-
-        v.validate().map_err(|e| {
-            tonic::Status::invalid_argument(format!("Validation failed: {}", e))
-        })?;
-
-        Ok(v)
-    }
 }
