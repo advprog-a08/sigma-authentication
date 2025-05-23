@@ -34,6 +34,14 @@ impl AdminService {
         Ok(self.repo.find_one(email).await?)
     }
 
+    pub async fn update_one(&self, email: String, name: String) -> Result<Option<AdminModel>, AdminServiceError> {
+        Ok(self.repo.update_one(email, name).await?)
+    }
+
+    pub async fn delete_one(&self, email: String) -> Result<(), AdminServiceError> {
+        Ok(self.repo.delete_one(email).await?)
+    }
+
     pub async fn authenticate(
         &self,
         email: String,

@@ -88,13 +88,53 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
         &self,
         request: Request<proto::UpdateAdminRequest>
     ) -> Result<Response<proto::AdminResponse>, Status> {
-        Err(Status::unimplemented("Not yet implemented"))
+        let proto::UpdateAdminRequest { token, new_name, .. } = request.into_inner();
+
+        let claims = self
+            .token_service
+            .decode_jwt(token)
+            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        
+        let admin = self
+            .admin_service
+            .find_one(claims.sub)
+            .await
+            .map_err(|e| Status::invalid_argument(e.to_string()))?
+            .ok_or_else(|| Status::not_found("Admin not found"))?;
+
+        let admin = self
+            .admin_service
+            .update_one(admin.email, new_name)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?
+            .ok_or_else(|| Status::not_found("Admin not found"))?;
+
+        Ok(Response::new(proto::AdminResponse { admin: Some(admin.into()) }))
     }
 
     async fn delete_admin(
         &self,
         request: Request<proto::DeleteAdminRequest>
     ) -> Result<Response<()>, Status> {
-        Err(Status::unimplemented("Not yet implemented"))
+        let proto::DeleteAdminRequest { token } = request.into_inner();
+
+        let claims = self
+            .token_service
+            .decode_jwt(token)
+            .map_err(|e| Status::invalid_argument(e.to_string()))?;
+        
+        let admin = self
+            .admin_service
+            .find_one(claims.sub)
+            .await
+            .map_err(|e| Status::invalid_argument(e.to_string()))?
+            .ok_or_else(|| Status::not_found("Admin not found"))?;
+
+        self.admin_service
+            .delete_one(admin.email)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        Ok(Response::new(()))
     }
 }
