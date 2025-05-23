@@ -206,6 +206,45 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_update_one_fail_validation() {
+        let test_db = database::setup_test_db().await;
+        let admin_repository = AdminRepository::new(test_db.pool.clone());
+
+        // first, create admin
+        admin_repository.create(
+            "test@example.com".to_string(),
+            "test".to_string(),
+            "HelloWorld123!".to_string()
+        ).await.unwrap();
+
+        let admin_service = AdminService::new(admin_repository);
+        let token_service = TokenService::new("asdf".to_string(), "asdf".to_string());
+        let admin_grpc = AdminGrpc::new(admin_service, token_service);
+
+        // second, create token
+        let result = admin_grpc.login_admin(Request::new(proto::LoginAdminRequest {
+            email: "test@example.com".to_string(),
+            password: "HelloWorld123!".to_string(),
+        })).await.unwrap();
+
+        let token = result.into_inner().token;
+
+        // third, update the admin
+        let result = admin_grpc.update_admin(Request::new(proto::UpdateAdminRequest {
+            token,
+            new_name: "1".repeat(300), // exceeds 255
+            new_password: "test123".to_string(),
+        })).await;
+
+        assert!(result.is_err());
+
+        // fourth, check the admin
+        let admin_repository = AdminRepository::new(test_db.pool.clone());
+        let db_result = admin_repository.find_one("test@example.com".to_string()).await.unwrap();
+        assert_eq!(db_result.unwrap().name, "test".to_string());
+    }
+
+    #[tokio::test]
     async fn test_delete_one_success() {
         let test_db = database::setup_test_db().await;
         let admin_repository = AdminRepository::new(test_db.pool.clone());

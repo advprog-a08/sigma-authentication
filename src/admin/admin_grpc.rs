@@ -2,7 +2,7 @@ use tonic::{Request, Response, Status};
 
 use crate::token::TokenService;
 
-use super::{AdminService, ValidatedCreateAdminRequest};
+use super::{AdminService, ValidatedCreateAdminRequest, ValidatedUpdateAdminRequest};
 use super::proto::{self, LoginAdminRequest};
 
 pub struct AdminGrpc {
@@ -88,11 +88,11 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
         &self,
         request: Request<proto::UpdateAdminRequest>
     ) -> Result<Response<proto::AdminResponse>, Status> {
-        let proto::UpdateAdminRequest { token, new_name, .. } = request.into_inner();
+        let req = ValidatedUpdateAdminRequest::try_from(request.into_inner())?;
 
         let claims = self
             .token_service
-            .decode_jwt(token)
+            .decode_jwt(req.token)
             .map_err(|e| Status::invalid_argument(e.to_string()))?;
         
         let admin = self
@@ -104,7 +104,7 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
 
         let admin = self
             .admin_service
-            .update_one(admin.email, new_name)
+            .update_one(admin.email, req.new_name)
             .await
             .map_err(|e| Status::internal(e.to_string()))?
             .ok_or_else(|| Status::not_found("Admin not found"))?;

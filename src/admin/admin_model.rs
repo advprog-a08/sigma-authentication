@@ -30,6 +30,49 @@ pub struct ValidatedCreateAdminRequest {
     pub password: String,
 }
 
+impl TryFrom<proto::CreateAdminRequest> for ValidatedCreateAdminRequest {
+    type Error = tonic::Status;
+
+    fn try_from(value: proto::CreateAdminRequest) -> Result<Self, Self::Error> {
+        let v = ValidatedCreateAdminRequest {
+            email: value.email,
+            name: value.name,
+            password: value.password,
+        };
+
+        v.validate().map_err(|e| {
+            tonic::Status::invalid_argument(format!("Validation failed: {}", e))
+        })?;
+
+        Ok(v)
+    }
+}
+
+#[derive(Debug, Validate, Deserialize)]
+pub struct ValidatedUpdateAdminRequest {
+    #[validate(length(max = 255))]
+    pub new_name: String,
+
+    pub token: String,
+}
+
+impl TryFrom<proto::UpdateAdminRequest> for ValidatedUpdateAdminRequest {
+    type Error = tonic::Status;
+
+    fn try_from(value: proto::UpdateAdminRequest) -> Result<Self, Self::Error> {
+        let v = Self {
+            new_name: value.new_name,
+            token: value.token,
+        };
+
+        v.validate().map_err(|e| {
+            tonic::Status::invalid_argument(format!("Validation failed: {}", e))
+        })?;
+
+        Ok(v)
+    }
+}
+
 fn validate_password(password: &str) -> Result<(), ValidationError> {
     let min_length = 8;
     let err = ValidationError::new("password");
@@ -64,22 +107,4 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     }
 
     Ok(())
-}
-
-impl TryFrom<proto::CreateAdminRequest> for ValidatedCreateAdminRequest {
-    type Error = tonic::Status;
-
-    fn try_from(value: proto::CreateAdminRequest) -> Result<Self, Self::Error> {
-        let v = ValidatedCreateAdminRequest {
-            email: value.email,
-            name: value.name,
-            password: value.password,
-        };
-
-        v.validate().map_err(|e| {
-            tonic::Status::invalid_argument(format!("Validation failed: {}", e))
-        })?;
-
-        Ok(v)
-    }
 }
