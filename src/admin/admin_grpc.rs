@@ -83,4 +83,18 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
 
         Ok(Response::new(proto::AdminResponse { admin: Some(admin.into()) }))
     }
+
+    async fn update_admin(
+        &self,
+        request: Request<proto::UpdateAdminRequest>
+    ) -> Result<Response<proto::AdminResponse>, Status> {
+        Err(Status::unimplemented("Not yet implemented"))
+    }
+
+    async fn delete_admin(
+        &self,
+        request: Request<proto::DeleteAdminRequest>
+    ) -> Result<Response<()>, Status> {
+        Err(Status::unimplemented("Not yet implemented"))
+    }
 }

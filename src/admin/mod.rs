@@ -32,6 +32,7 @@ mod tests {
 
         let request = Request::new(proto::CreateAdminRequest {
             email: "test@example.com".to_string(),
+            name: "test".to_string(),
             password: "HelloWorld123!".to_string(),
         });
 
@@ -56,6 +57,7 @@ mod tests {
         // execute request
         let request = Request::new(proto::CreateAdminRequest {
             email: "test@example.com".to_string(),
+            name: "test".to_string(),
             password: "HelloWorld123!".to_string(),
         });
 
@@ -77,6 +79,7 @@ mod tests {
 
         let request = Request::new(proto::CreateAdminRequest {
             email: "testexample.com".to_string(),
+            name: "test".to_string(),
             password: "HelloWorld123!".to_string(),
         });
 
