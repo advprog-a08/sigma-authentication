@@ -52,7 +52,11 @@ mod tests {
 
         // create existing admin
         let admin_repository = AdminRepository::new(test_db.pool.clone());
-        admin_repository.create("test@example.com".to_string(), "password123".to_string()).await.unwrap();
+        admin_repository.create(
+            "test@example.com".to_string(),
+            "test".to_string(),
+            "password123".to_string()
+        ).await.unwrap();
 
         // execute request
         let request = Request::new(proto::CreateAdminRequest {
@@ -100,7 +104,11 @@ mod tests {
         let admin_grpc = AdminGrpc::new(admin_service, token_service);
 
         let admin_repository = AdminRepository::new(test_db.pool.clone());
-        admin_repository.create("test@example.com".to_string(), "password123".to_string()).await.unwrap();
+        admin_repository.create(
+            "test@example.com".to_string(),
+            "test".to_string(),
+            "password123".to_string()
+        ).await.unwrap();
 
         let request = Request::new(proto::LoginAdminRequest {
             email: "test@example.com".to_string(),
@@ -119,7 +127,11 @@ mod tests {
         let admin_grpc = AdminGrpc::new(admin_service, token_service);
 
         let admin_repository = AdminRepository::new(test_db.pool.clone());
-        admin_repository.create("test@example.com".to_string(), "password123".to_string()).await.unwrap();
+        admin_repository.create(
+            "test@example.com".to_string(),
+            "test".to_string(),
+            "password123".to_string()
+        ).await.unwrap();
 
         let request = Request::new(proto::LoginAdminRequest {
             email: "test@example.com".to_string(),
@@ -163,7 +175,8 @@ mod tests {
         // first, create admin
         admin_repository.create(
             "test@example.com".to_string(),
-            "HelloWorld123!".to_string(),
+            "test".to_string(),
+            "HelloWorld123!".to_string()
         ).await.unwrap();
 
         let admin_service = AdminService::new(admin_repository);

@@ -28,6 +28,7 @@ impl AdminRepository {
     pub async fn create(
         &self,
         email: String,
+        name: String,
         password: String,
     ) -> Result<AdminModel, AdminRepositoryError> {
         let salt = SaltString::generate(&mut OsRng);
@@ -39,11 +40,12 @@ impl AdminRepository {
         Ok(query_as!(
             AdminModel,
             r#"
-            INSERT INTO admins (email, password)
-            VALUES ($1, $2)
-            RETURNING email, password
+            INSERT INTO admins (email, name, password)
+            VALUES ($1, $2, $3)
+            RETURNING email, name, password
             "#,
             email,
+            name,
             password
         )
         .fetch_one(&self.pool)
@@ -57,7 +59,7 @@ impl AdminRepository {
         Ok(query_as!(
             AdminModel,
             r#"
-            SELECT email, password
+            SELECT email, name, password
             FROM admins
             WHERE email = $1;
             "#,
@@ -80,7 +82,11 @@ mod tests {
 
         let ar = AdminRepository::new(test_db.pool);
         let admin = ar
-            .create("asdf@gmail.com".to_string(), "HelloWorld123".to_string())
+            .create(
+                "asdf@gmail.com".to_string(),
+                "asdf".to_string(),
+                "HelloWorld123".to_string(),
+            )
             .await
             .unwrap();
 
@@ -96,7 +102,11 @@ mod tests {
 
         let ar = AdminRepository::new(test_db.pool);
         let admin = ar
-            .create("asdf@gmail.com".to_string(), "HelloWorld123".to_string())
+            .create(
+                "asdf@gmail.com".to_string(),
+                "asdf".to_string(),
+                "HelloWorld123".to_string(),
+            )
             .await
             .unwrap();
 

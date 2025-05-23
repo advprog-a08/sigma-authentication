@@ -8,6 +8,7 @@ use super::proto;
 #[derive(Debug, Clone, Serialize)]
 pub struct AdminModel {
     pub email: String,
+    pub name: String,
     pub password: String,
 }
 
@@ -21,6 +22,9 @@ impl Into<proto::Admin> for AdminModel {
 pub struct ValidatedCreateAdminRequest {
     #[validate(email(message = "Email must be valid"))]
     pub email: String,
+
+    #[validate(length(max = 255))]
+    pub name: String,
 
     #[validate(custom(function = "validate_password"))]
     pub password: String,
@@ -68,6 +72,7 @@ impl TryFrom<proto::CreateAdminRequest> for ValidatedCreateAdminRequest {
     fn try_from(value: proto::CreateAdminRequest) -> Result<Self, Self::Error> {
         let v = ValidatedCreateAdminRequest {
             email: value.email,
+            name: value.name,
             password: value.password,
         };
 

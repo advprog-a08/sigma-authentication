@@ -28,7 +28,7 @@ impl proto::admin_service_server::AdminService for AdminGrpc {
             Ok(None) => {
                 match self
                     .admin_service
-                    .register_admin(create_req.email, create_req.password)
+                    .register_admin(create_req.email, create_req.name, create_req.password)
                     .await
                 {
                     Ok(admin) => {
