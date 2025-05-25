@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use sigma_authentication::app::App;
+use sigma_authentication::app::{GrpcApp, RestApp};
 use sigma_authentication::database::setup_db;
 
 #[tokio::main]
@@ -13,8 +13,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await
         .expect("Failed to migrate!");
 
-    let app = App::default().with_pool(pool);
-    app.run("[::1]:50051").await?;
+    let pool_ = pool.clone();
+    let grpc_task = tokio::spawn(async move {
+        let app = GrpcApp::default().with_pool(pool_);
+        app.run("[::1]:50051").await.unwrap();
+    });
+
+    let pool_ = pool.clone();
+    let rest_task = tokio::spawn(async move {
+        let app = RestApp::default().with_pool(pool_);
+        app.run("0.0.0.0:3000").await.unwrap();
+    });
+
+    let _ = tokio::join!(grpc_task, rest_task);
 
     Ok(())
 }

@@ -1,6 +1,9 @@
 use std::error::Error;
 
+use axum::routing;
+use axum::Router;
 use sqlx::PgPool;
+use tokio::net::TcpListener;
 use tonic::transport::Server;
 
 use crate::admin::{AdminGrpc, AdminRepository, AdminService};
@@ -10,11 +13,11 @@ use crate::table_session::proto::table_session_service_server::TableSessionServi
 use crate::token::TokenService;
 
 #[derive(Default)]
-pub struct App {
+pub struct GrpcApp {
     pool: Option<PgPool>,
 }
 
-impl App {
+impl GrpcApp {
     pub fn with_pool(mut self, pool: PgPool) -> Self {
         self.pool = Some(pool);
         self
@@ -40,6 +43,30 @@ impl App {
             .add_service(TableSessionServiceServer::new(table_session_grpc))
             .serve(addr)
             .await?;
+
+        Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct RestApp {
+    pool: Option<PgPool>,
+}
+
+impl RestApp {
+    pub fn with_pool(mut self, pool: PgPool) -> Self {
+        self.pool = Some(pool);
+        self
+    }
+
+    pub async fn run(self, addr: &str) -> Result<(), Box<dyn Error>> {
+        async fn hello() -> &'static str {
+            "Hello from REST!"
+        }
+
+        let app = Router::new().route("/", routing::get(hello));
+        let listener = TcpListener::bind(addr).await.unwrap();
+        axum::serve(listener, app).await.unwrap();
 
         Ok(())
     }
