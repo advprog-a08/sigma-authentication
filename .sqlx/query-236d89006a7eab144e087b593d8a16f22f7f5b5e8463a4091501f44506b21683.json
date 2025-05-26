@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE table_sessions\n            SET is_active = FALSE\n            WHERE id = $1\n            RETURNING id, table_id, is_active, created_at\n            ",
+  "query": "\n            INSERT INTO table_sessions (table_id, order_id)\n            VALUES ($1, $2)\n            RETURNING id, table_id, order_id, checkout_id, is_active, created_at\n            ",
   "describe": {
     "columns": [
       {
@@ -15,17 +15,28 @@
       },
       {
         "ordinal": 2,
+        "name": "order_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "checkout_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
         "name": "is_active",
         "type_info": "Bool"
       },
       {
-        "ordinal": 3,
+        "ordinal": 5,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -33,8 +44,10 @@
       false,
       false,
       false,
+      true,
+      false,
       false
     ]
   },
-  "hash": "ea156ec0969f877ba008dcb7c31efe78361f7773338455111480509b344a026e"
+  "hash": "236d89006a7eab144e087b593d8a16f22f7f5b5e8463a4091501f44506b21683"
 }
