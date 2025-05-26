@@ -87,8 +87,14 @@ impl proto::table_session_service_server::TableSessionService for TableSessionGr
         let request = request.into_inner();
         let id = Uuid::from_str(&request.id)
             .map_err(|_| Status::invalid_argument("id not a UUID"))?;
-        let checkout_id = Uuid::from_str(&request.checkout_id)
-            .map_err(|_| Status::invalid_argument("checkout_id not a UUID"))?;
+
+        let checkout_id = match request.checkout_id {
+            Some(checkout_id) => {
+                Some(Uuid::from_str(&checkout_id)
+                    .map_err(|_| Status::invalid_argument("checkout_id not a UUID"))?)
+            },
+            None => None
+        };
 
         match self.table_session_service.set_checkout_id(id, checkout_id).await {
             Ok(Some(table_session)) => {

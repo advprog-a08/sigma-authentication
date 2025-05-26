@@ -43,7 +43,7 @@ impl TableSessionService {
     pub async fn set_checkout_id(
         &self,
         id: Uuid,
-        checkout_id: Uuid,
+        checkout_id: Option<Uuid>,
     ) -> Result<Option<TableSessionModel>, TableSessionServiceError> {
         Ok(self.repo.set_checkout_id(id, checkout_id).await?)
     }
