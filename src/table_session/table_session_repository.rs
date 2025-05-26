@@ -72,6 +72,26 @@ impl TableSessionRepository {
         .fetch_optional(&self.pool)
         .await?)
     }
+
+    pub async fn set_checkout_id(
+        &self,
+        id: Uuid,
+        checkout_id: Uuid,
+    ) -> Result<Option<TableSessionModel>, TableSessionRepositoryError> {
+        Ok(query_as!(
+            TableSessionModel,
+            r#"
+            UPDATE table_sessions
+            SET checkout_id = $2
+            WHERE id = $1
+            RETURNING id, table_id, order_id, checkout_id, is_active, created_at
+            "#,
+            id,
+            checkout_id
+        )
+        .fetch_optional(&self.pool)
+        .await?)
+    }
 }
 
 #[cfg(test)]
@@ -149,5 +169,25 @@ mod tests {
 
         let result = tsr.deactivate(random_id).await.unwrap();
         assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_set_checkout_id() {
+        let test_db = setup_test_db().await;
+        let tsr = TableSessionRepository::new(test_db.pool);
+
+        let table_id = Uuid::new_v4();
+        let order_id = Uuid::new_v4();
+
+        // first create the session
+        let session = tsr.create(table_id, order_id).await.unwrap();
+        assert!(session.checkout_id.is_none());
+
+        // second set the checkout_id
+        let checkout_id = Uuid::new_v4();
+        let session = tsr.set_checkout_id(session.id, checkout_id).await.unwrap();
+
+        // third assert
+        assert_eq!(session.unwrap().checkout_id.unwrap(), checkout_id);
     }
 }

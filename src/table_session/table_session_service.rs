@@ -39,6 +39,14 @@ impl TableSessionService {
     ) -> Result<Option<TableSessionModel>, TableSessionServiceError> {
         Ok(self.repo.find_by_id(id).await?)
     }
+
+    pub async fn set_checkout_id(
+        &self,
+        id: Uuid,
+        checkout_id: Uuid,
+    ) -> Result<Option<TableSessionModel>, TableSessionServiceError> {
+        Ok(self.repo.set_checkout_id(id, checkout_id).await?)
+    }
 }
 
 #[cfg(test)]

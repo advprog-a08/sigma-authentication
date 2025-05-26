@@ -79,4 +79,25 @@ impl proto::table_session_service_server::TableSessionService for TableSessionGr
             Err(e) => Err(Status::unauthenticated(format!("Unable to get Table Session: {e}"))),
         }
     }
+
+    async fn set_checkout_id_to_table_session(
+        &self,
+        request: Request<proto::CheckoutIdRequest>,
+    ) -> Result<Response<proto::TableSessionResponse>, Status> {
+        let request = request.into_inner();
+        let id = Uuid::from_str(&request.id)
+            .map_err(|_| Status::invalid_argument("id not a UUID"))?;
+        let checkout_id = Uuid::from_str(&request.checkout_id)
+            .map_err(|_| Status::invalid_argument("checkout_id not a UUID"))?;
+
+        match self.table_session_service.set_checkout_id(id, checkout_id).await {
+            Ok(Some(table_session)) => {
+                Ok(Response::new(proto::TableSessionResponse {
+                    table_session: Some(proto::TableSession::from(table_session))
+                }))
+            },
+            Ok(None) => Err(Status::not_found("Table Session not found")),
+            Err(e) => Err(Status::unauthenticated(format!("Unable to get Table Session: {e}"))),
+        }
+    }
 }
