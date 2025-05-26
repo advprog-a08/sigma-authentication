@@ -52,8 +52,6 @@ impl TryFrom<proto::CreateAdminRequest> for ValidatedCreateAdminRequest {
 pub struct ValidatedUpdateAdminRequest {
     #[validate(length(max = 255))]
     pub new_name: String,
-
-    pub token: String,
 }
 
 impl TryFrom<proto::UpdateAdminRequest> for ValidatedUpdateAdminRequest {
@@ -62,7 +60,6 @@ impl TryFrom<proto::UpdateAdminRequest> for ValidatedUpdateAdminRequest {
     fn try_from(value: proto::UpdateAdminRequest) -> Result<Self, Self::Error> {
         let v = Self {
             new_name: value.new_name,
-            token: value.token,
         };
 
         v.validate().map_err(|e| {
@@ -107,4 +104,10 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     }
 
     Ok(())
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct LoginAdminRequest {
+    pub email: String,
+    pub password: String,
 }

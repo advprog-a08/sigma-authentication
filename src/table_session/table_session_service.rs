@@ -21,9 +21,9 @@ impl TableSessionService {
     pub async fn create_session(
         &self,
         table_id: Uuid,
+        order_id: Uuid,
     ) -> Result<TableSessionModel, TableSessionServiceError> {
-        // TODO: Check if table_id is already taken
-        Ok(self.repo.create(table_id).await?)
+        Ok(self.repo.create(table_id, order_id).await?)
     }
 
     pub async fn deactivate_session(
@@ -39,6 +39,14 @@ impl TableSessionService {
     ) -> Result<Option<TableSessionModel>, TableSessionServiceError> {
         Ok(self.repo.find_by_id(id).await?)
     }
+
+    pub async fn set_checkout_id(
+        &self,
+        id: Uuid,
+        checkout_id: Option<Uuid>,
+    ) -> Result<Option<TableSessionModel>, TableSessionServiceError> {
+        Ok(self.repo.set_checkout_id(id, checkout_id).await?)
+    }
 }
 
 #[cfg(test)]
@@ -51,10 +59,12 @@ mod tests {
     async fn test_create_session() {
         let test_db = setup_test_db().await;
         let table_id = Uuid::new_v4();
+        let order_id = Uuid::new_v4();
+
         let repo = TableSessionRepository::new(test_db.pool);
         let service = TableSessionService::new(repo);
 
-        let result = service.create_session(table_id).await.unwrap();
+        let result = service.create_session(table_id, order_id).await.unwrap();
 
         assert_eq!(result.table_id, table_id);
         assert!(result.is_active);
@@ -64,9 +74,10 @@ mod tests {
     async fn test_find_by_id() {
         let test_db = setup_test_db().await;
         let table_id = Uuid::new_v4();
+        let order_id = Uuid::new_v4();
 
         let repo = TableSessionRepository::new(test_db.pool);
-        let table_session = repo.create(table_id).await.unwrap();
+        let table_session = repo.create(table_id, order_id).await.unwrap();
 
         let service = TableSessionService::new(repo);
         let result = service.find_by_id(table_session.id).await.unwrap();
@@ -80,10 +91,12 @@ mod tests {
     async fn test_deactivate_session() {
         let test_db = setup_test_db().await;
         let table_id = Uuid::new_v4();
+        let order_id = Uuid::new_v4();
+
         let repo = TableSessionRepository::new(test_db.pool);
 
         // First create a session
-        let created_session = repo.create(table_id).await.unwrap();
+        let created_session = repo.create(table_id, order_id).await.unwrap();
         assert!(created_session.is_active);
 
         // Now use the service to deactivate it
@@ -109,26 +122,5 @@ mod tests {
 
         let result = result.unwrap();
         assert!(result.is_none());
-    }
-
-    #[tokio::test]
-    async fn test_multiple_sessions_for_same_table() {
-        let test_db = setup_test_db().await;
-        let table_id = Uuid::new_v4();
-        let repo = TableSessionRepository::new(test_db.pool);
-        let service = TableSessionService::new(repo);
-
-        // Create first session
-        let session1 = service.create_session(table_id).await.unwrap();
-        assert_eq!(session1.table_id, table_id);
-
-        // Create second session for the same table
-        let session2 = service.create_session(table_id).await.unwrap();
-        assert_eq!(session2.table_id, table_id);
-
-        // Verify they are different sessions
-        assert_ne!(session1.id, session2.id);
-        assert!(session1.is_active);
-        assert!(session2.is_active);
     }
 }

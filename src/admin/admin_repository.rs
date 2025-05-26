@@ -8,7 +8,7 @@ use super::AdminModel;
 
 #[derive(Error, Debug)]
 pub enum AdminRepositoryError {
-    #[error("An error occurred with the database")]
+    #[error("An error occurred with the database: {0}")]
     Database(#[from] sqlx::Error),
 
     #[error("An error occurred while creating admin")]

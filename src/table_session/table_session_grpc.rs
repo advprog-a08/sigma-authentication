@@ -27,10 +27,12 @@ impl proto::table_session_service_server::TableSessionService for TableSessionGr
         let request = request.into_inner();
         let table_id = Uuid::from_str(&request.table_id)
             .map_err(|_| Status::invalid_argument("table_id not a UUID"))?;
+        let order_id = Uuid::from_str(&request.order_id)
+            .map_err(|_| Status::invalid_argument("order_id not a UUID"))?;
 
         // TODO: Check if table is occupied
 
-        match self.table_session_service.create_session(table_id).await {
+        match self.table_session_service.create_session(table_id, order_id).await {
             Ok(table_session) => {
                 Ok(Response::new(proto::TableSessionResponse {
                     table_session: Some(proto::TableSession::from(table_session))
@@ -59,15 +61,42 @@ impl proto::table_session_service_server::TableSessionService for TableSessionGr
         }
     }
 
-    async fn deactivate_table_session(
+    async fn set_is_active_to_table_session(
         &self,
-        request: Request<proto::SessionIdRequest>,
+        request: Request<proto::IsActiveRequest>,
     ) -> Result<Response<proto::TableSessionResponse>, Status> {
         let request = request.into_inner();
-        let session_id = Uuid::from_str(&request.session_id)
-            .map_err(|_| Status::invalid_argument("session_id not a UUID"))?;
+        let session_id = Uuid::from_str(&request.id)
+            .map_err(|_| Status::invalid_argument("id not a UUID"))?;
 
         match self.table_session_service.deactivate_session(session_id).await {
+            Ok(Some(table_session)) => {
+                Ok(Response::new(proto::TableSessionResponse {
+                    table_session: Some(proto::TableSession::from(table_session))
+                }))
+            },
+            Ok(None) => Err(Status::not_found("Table Session not found")),
+            Err(e) => Err(Status::unauthenticated(format!("Unable to get Table Session: {e}"))),
+        }
+    }
+
+    async fn set_checkout_id_to_table_session(
+        &self,
+        request: Request<proto::CheckoutIdRequest>,
+    ) -> Result<Response<proto::TableSessionResponse>, Status> {
+        let request = request.into_inner();
+        let id = Uuid::from_str(&request.id)
+            .map_err(|_| Status::invalid_argument("id not a UUID"))?;
+
+        let checkout_id = match request.checkout_id {
+            Some(checkout_id) => {
+                Some(Uuid::from_str(&checkout_id)
+                    .map_err(|_| Status::invalid_argument("checkout_id not a UUID"))?)
+            },
+            None => None
+        };
+
+        match self.table_session_service.set_checkout_id(id, checkout_id).await {
             Ok(Some(table_session)) => {
                 Ok(Response::new(proto::TableSessionResponse {
                     table_session: Some(proto::TableSession::from(table_session))

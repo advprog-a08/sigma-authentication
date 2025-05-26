@@ -33,6 +33,7 @@ mod tests {
 
         let request = Request::new(proto::TableIdRequest {
             table_id: Uuid::new_v4().to_string(),
+            order_id: Uuid::new_v4().to_string(),
         });
 
         // test by only unwrapping
@@ -52,7 +53,13 @@ mod tests {
         let table_session_grpc = TableSessionGrpc::new(table_session_service);
 
         let table_id = Uuid::new_v4().to_string();
-        let request = Request::new(proto::TableIdRequest { table_id: table_id.clone() });
+        let order_id = Uuid::new_v4().to_string();
+
+        let request = Request::new(proto::TableIdRequest {
+            table_id: table_id.clone(),
+            order_id: order_id.clone(),
+        });
+
         let response = table_session_grpc.create_table_session(request).await.unwrap();
 
         let session_id = response.into_inner().table_session.unwrap().id;
@@ -89,14 +96,20 @@ mod tests {
 
         // first, create session
         let response = table_session_grpc.create_table_session(
-            Request::new(proto::TableIdRequest { table_id: Uuid::new_v4().to_string() })
+            Request::new(proto::TableIdRequest {
+                table_id: Uuid::new_v4().to_string(),
+                order_id: Uuid::new_v4().to_string(),
+            })
         ).await.unwrap();
 
         let session_id = response.into_inner().table_session.unwrap().id;
 
         // second, deactivate session
-        let response = table_session_grpc.deactivate_table_session(
-            Request::new(proto::SessionIdRequest { session_id: session_id.clone() })
+        let response = table_session_grpc.set_is_active_to_table_session(
+            Request::new(proto::IsActiveRequest {
+                id: session_id.clone(),
+                value: true,
+            })
         ).await.unwrap();
 
         // verify is_active is false
@@ -108,5 +121,87 @@ mod tests {
         let session_id = Uuid::from_str(&session_id).unwrap();
         let table_session = table_session_repository.find_by_id(session_id).await.unwrap().unwrap();
         assert_eq!(table_session.is_active, false);
+    }
+
+    #[tokio::test]
+    async fn test_set_checkout_id() {
+        let test_db = database::setup_test_db().await;
+        let table_session_repository = TableSessionRepository::new(test_db.pool.clone());
+        let table_session_service = TableSessionService::new(table_session_repository);
+        let table_session_grpc = TableSessionGrpc::new(table_session_service);
+
+        // first, create session
+        let response = table_session_grpc.create_table_session(
+            Request::new(proto::TableIdRequest {
+                table_id: Uuid::new_v4().to_string(),
+                order_id: Uuid::new_v4().to_string(),
+            })
+        ).await.unwrap();
+
+        let session = response.into_inner().table_session.unwrap();
+        assert!(session.checkout_id.is_none());
+
+        // second, set the checkout id
+        let checkout_id = Uuid::new_v4();
+        table_session_grpc.set_checkout_id_to_table_session(
+            Request::new(proto::CheckoutIdRequest {
+                id: session.id.clone(),
+                checkout_id: Some(checkout_id.to_string()),
+            })
+        ).await.unwrap();
+
+        // third assert
+        let table_session_repository = TableSessionRepository::new(test_db.pool.clone());
+        let db_response = table_session_repository
+            .find_by_id(Uuid::from_str(&session.id).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(db_response.unwrap().checkout_id, Some(checkout_id));
+    }
+
+    #[tokio::test]
+    async fn test_unset_checkout_id() {
+        let test_db = database::setup_test_db().await;
+        let table_session_repository = TableSessionRepository::new(test_db.pool.clone());
+        let table_session_service = TableSessionService::new(table_session_repository);
+        let table_session_grpc = TableSessionGrpc::new(table_session_service);
+
+        // first, create session
+        let response = table_session_grpc.create_table_session(
+            Request::new(proto::TableIdRequest {
+                table_id: Uuid::new_v4().to_string(),
+                order_id: Uuid::new_v4().to_string(),
+            })
+        ).await.unwrap();
+
+        let session = response.into_inner().table_session.unwrap();
+        assert!(session.checkout_id.is_none());
+
+        // second, set the checkout id
+        let checkout_id = Uuid::new_v4();
+        table_session_grpc.set_checkout_id_to_table_session(
+            Request::new(proto::CheckoutIdRequest {
+                id: session.id.clone(),
+                checkout_id: Some(checkout_id.to_string()),
+            })
+        ).await.unwrap();
+
+        // third, unset the checkout id
+        table_session_grpc.set_checkout_id_to_table_session(
+            Request::new(proto::CheckoutIdRequest {
+                id: session.id.clone(),
+                checkout_id: None,
+            })
+        ).await.unwrap();
+
+        // fourth, assert
+        let table_session_repository = TableSessionRepository::new(test_db.pool.clone());
+        let db_response = table_session_repository
+            .find_by_id(Uuid::from_str(&session.id).unwrap())
+            .await
+            .unwrap();
+
+        assert!(db_response.unwrap().checkout_id.is_none());
     }
 }

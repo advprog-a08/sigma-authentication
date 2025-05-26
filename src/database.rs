@@ -7,7 +7,7 @@ pub async fn setup_db() -> Pool<Postgres> {
     let db_url = env::var("DATABASE_URL").expect("Unable to read DATABASE_URL!");
 
     PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(50)
         .connect(&db_url)
         .await
         .expect("Unable to connect to DB!")
