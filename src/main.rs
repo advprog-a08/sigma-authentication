@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pool_ = pool.clone();
     let rest_task = tokio::spawn(async move {
         let app = RestApp::default().with_pool(pool_);
-        app.run("0.0.0.0:3000").await.unwrap();
+        app.run("0.0.0.0:8082").await.unwrap();
     });
 
     let _ = tokio::join!(grpc_task, rest_task);

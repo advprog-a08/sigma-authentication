@@ -6,6 +6,7 @@ use axum::Router;
 use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tonic::transport::Server;
+use tower_http::cors::CorsLayer;
 
 use crate::admin;
 use crate::admin::{AdminGrpc, AdminRepository, AdminService};
@@ -84,9 +85,12 @@ impl RestApp {
             token_service: Arc::new(token_service),
         };
 
+        let cors_layer = CorsLayer::permissive();
+
         let app = Router::new()
             .route("/", routing::get(hello))
             .nest("/admin", admin::router())
+            .layer(cors_layer)
             .with_state(state);
 
         let listener = TcpListener::bind(addr).await.unwrap();
