@@ -105,8 +105,11 @@ mod tests {
         let session_id = response.into_inner().table_session.unwrap().id;
 
         // second, deactivate session
-        let response = table_session_grpc.deactivate_table_session(
-            Request::new(proto::SessionIdRequest { session_id: session_id.clone() })
+        let response = table_session_grpc.set_is_active_to_table_session(
+            Request::new(proto::IsActiveRequest {
+                id: session_id.clone(),
+                value: true,
+            })
         ).await.unwrap();
 
         // verify is_active is false

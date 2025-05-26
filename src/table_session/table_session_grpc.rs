@@ -61,13 +61,13 @@ impl proto::table_session_service_server::TableSessionService for TableSessionGr
         }
     }
 
-    async fn deactivate_table_session(
+    async fn set_is_active_to_table_session(
         &self,
-        request: Request<proto::SessionIdRequest>,
+        request: Request<proto::IsActiveRequest>,
     ) -> Result<Response<proto::TableSessionResponse>, Status> {
         let request = request.into_inner();
-        let session_id = Uuid::from_str(&request.session_id)
-            .map_err(|_| Status::invalid_argument("session_id not a UUID"))?;
+        let session_id = Uuid::from_str(&request.id)
+            .map_err(|_| Status::invalid_argument("id not a UUID"))?;
 
         match self.table_session_service.deactivate_session(session_id).await {
             Ok(Some(table_session)) => {
