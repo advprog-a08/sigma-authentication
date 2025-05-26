@@ -27,10 +27,12 @@ impl proto::table_session_service_server::TableSessionService for TableSessionGr
         let request = request.into_inner();
         let table_id = Uuid::from_str(&request.table_id)
             .map_err(|_| Status::invalid_argument("table_id not a UUID"))?;
+        let order_id = Uuid::from_str(&request.order_id)
+            .map_err(|_| Status::invalid_argument("order_id not a UUID"))?;
 
         // TODO: Check if table is occupied
 
-        match self.table_session_service.create_session(table_id).await {
+        match self.table_session_service.create_session(table_id, order_id).await {
             Ok(table_session) => {
                 Ok(Response::new(proto::TableSessionResponse {
                     table_session: Some(proto::TableSession::from(table_session))

@@ -22,15 +22,17 @@ impl TableSessionRepository {
     pub async fn create(
         &self,
         table_id: Uuid,
+        order_id: Uuid,
     ) -> Result<TableSessionModel, TableSessionRepositoryError> {
         Ok(query_as!(
             TableSessionModel,
             r#"
-            INSERT INTO table_sessions (table_id)
-            VALUES ($1)
-            RETURNING id, table_id, is_active, created_at
+            INSERT INTO table_sessions (table_id, order_id)
+            VALUES ($1, $2)
+            RETURNING id, table_id, order_id, checkout_id, is_active, created_at
             "#,
-            table_id
+            table_id,
+            order_id
         )
         .fetch_one(&self.pool)
         .await?)
@@ -43,7 +45,7 @@ impl TableSessionRepository {
         Ok(query_as!(
             TableSessionModel,
             r#"
-            SELECT *
+            SELECT id, table_id, order_id, checkout_id, is_active, created_at
             FROM table_sessions
             WHERE id = $1
             "#,
@@ -63,7 +65,7 @@ impl TableSessionRepository {
             UPDATE table_sessions
             SET is_active = FALSE
             WHERE id = $1
-            RETURNING id, table_id, is_active, created_at
+            RETURNING id, table_id, order_id, checkout_id, is_active, created_at
             "#,
             id
         )
@@ -83,8 +85,9 @@ mod tests {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let table_id = Uuid::new_v4();
+        let order_id = Uuid::new_v4();
 
-        let session = tsr.create(table_id).await.unwrap();
+        let session = tsr.create(table_id, order_id).await.unwrap();
 
         assert_eq!(session.table_id, table_id);
         assert!(session.is_active);
@@ -95,8 +98,9 @@ mod tests {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let table_id = Uuid::new_v4();
+        let order_id = Uuid::new_v4();
 
-        let created_session = tsr.create(table_id).await.unwrap();
+        let created_session = tsr.create(table_id, order_id).await.unwrap();
         let Some(found_session) = tsr.find_by_id(created_session.id).await.unwrap() else {
             panic!()
         };
@@ -111,8 +115,9 @@ mod tests {
         let test_db = setup_test_db().await;
         let tsr = TableSessionRepository::new(test_db.pool);
         let table_id = Uuid::new_v4();
+        let order_id = Uuid::new_v4();
 
-        let created_session = tsr.create(table_id).await.unwrap();
+        let created_session = tsr.create(table_id, order_id).await.unwrap();
         assert!(created_session.is_active);
 
         let deactivated_session = tsr.deactivate(created_session.id).await.unwrap().unwrap();

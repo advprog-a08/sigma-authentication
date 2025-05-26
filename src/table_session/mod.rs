@@ -33,6 +33,7 @@ mod tests {
 
         let request = Request::new(proto::TableIdRequest {
             table_id: Uuid::new_v4().to_string(),
+            order_id: Uuid::new_v4().to_string(),
         });
 
         // test by only unwrapping
@@ -52,7 +53,13 @@ mod tests {
         let table_session_grpc = TableSessionGrpc::new(table_session_service);
 
         let table_id = Uuid::new_v4().to_string();
-        let request = Request::new(proto::TableIdRequest { table_id: table_id.clone() });
+        let order_id = Uuid::new_v4().to_string();
+
+        let request = Request::new(proto::TableIdRequest {
+            table_id: table_id.clone(),
+            order_id: order_id.clone(),
+        });
+
         let response = table_session_grpc.create_table_session(request).await.unwrap();
 
         let session_id = response.into_inner().table_session.unwrap().id;
@@ -89,7 +96,10 @@ mod tests {
 
         // first, create session
         let response = table_session_grpc.create_table_session(
-            Request::new(proto::TableIdRequest { table_id: Uuid::new_v4().to_string() })
+            Request::new(proto::TableIdRequest {
+                table_id: Uuid::new_v4().to_string(),
+                order_id: Uuid::new_v4().to_string(),
+            })
         ).await.unwrap();
 
         let session_id = response.into_inner().table_session.unwrap().id;
