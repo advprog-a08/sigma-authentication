@@ -2,6 +2,7 @@ use std::error::Error;
 
 use sigma_authentication::app::{GrpcApp, RestApp};
 use sigma_authentication::database::setup_db;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -12,6 +13,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .run(&pool)
         .await
         .expect("Failed to migrate!");
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info,tower_http=info")),
+        )
+        .with_target(true)
+        .with_level(true)
+        .init();
 
     let pool_ = pool.clone();
     let grpc_task = tokio::spawn(async move {

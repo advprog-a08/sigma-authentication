@@ -7,6 +7,10 @@ use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tonic::transport::Server;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::DefaultMakeSpan;
+use tower_http::trace::DefaultOnResponse;
+use tower_http::trace::TraceLayer;
+use tracing::Level;
 
 use crate::admin;
 use crate::admin::{AdminGrpc, AdminRepository, AdminService};
@@ -41,7 +45,12 @@ impl GrpcApp {
         let admin_grpc = AdminGrpc::new(admin_service, token_service);
         let table_session_grpc = TableSessionGrpc::new(table_session_service);
 
+        let trace_layer = TraceLayer::new_for_grpc()
+            .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+            .on_response(DefaultOnResponse::new().level(Level::INFO));
+
         Server::builder()
+            .layer(trace_layer)
             .add_service(AdminServiceServer::new(admin_grpc))
             .add_service(TableSessionServiceServer::new(table_session_grpc))
             .serve(addr)
@@ -87,10 +96,15 @@ impl RestApp {
 
         let cors_layer = CorsLayer::permissive();
 
+        let trace_layer = TraceLayer::new_for_http()
+            .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+            .on_response(DefaultOnResponse::new().level(Level::INFO));
+
         let app = Router::new()
             .route("/", routing::get(hello))
             .nest("/admin", admin::router())
             .layer(cors_layer)
+            .layer(trace_layer)
             .with_state(state);
 
         let listener = TcpListener::bind(addr).await.unwrap();
