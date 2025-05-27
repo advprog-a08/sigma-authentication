@@ -20,5 +20,6 @@ WORKDIR /app
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/sigma-authentication .
 
 EXPOSE 50051
+EXPOSE 8082
 
 CMD [ "./sigma-authentication" ]
