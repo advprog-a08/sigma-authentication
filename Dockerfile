@@ -1,6 +1,6 @@
 FROM rust:1.86-alpine AS builder
 
-RUN apk add --no-cache musl-dev gcc make pkgconfig openssl-dev openssl-libs-static protoc
+RUN apk add --no-cache musl-dev gcc make pkgconfig openssl-dev openssl-libs-static protoc protobuf-dev
 
 WORKDIR /app
 
