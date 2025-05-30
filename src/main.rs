@@ -25,17 +25,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let pool_ = pool.clone();
     let grpc_task = tokio::spawn(async move {
+        let addr = "[::1]:50051";
+        tracing::info!("Starting gRPC server at {}", addr);
         let app = GrpcApp::default().with_pool(pool_);
-        app.run("[::1]:50051").await.unwrap();
+        app.run(addr).await.unwrap();
     });
 
     let pool_ = pool.clone();
     let rest_task = tokio::spawn(async move {
+        let addr = "0.0.0.0:8082";
+        tracing::info!("Starting REST server at {}", addr);
         let app = RestApp::default().with_pool(pool_);
-        app.run("0.0.0.0:8082").await.unwrap();
+        app.run(addr).await.unwrap();
     });
 
-    let _ = tokio::join!(grpc_task, rest_task);
+    let (grpc_result, rest_result) = tokio::join!(grpc_task, rest_task);
+
+    if let Err(e) = grpc_result { panic!("gRPC task panicked: {:?}", e) }
+    if let Err(e) = rest_result { panic!("REST task panicked: {:?}", e) }
 
     Ok(())
 }
