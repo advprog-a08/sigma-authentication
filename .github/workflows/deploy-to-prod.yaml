@@ -1,10 +1,13 @@
 name: Build and Deploy Docker Image to K3S
 
 on:
-    push:
-        branches:
-            - main
-    workflow_dispatch:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: andrew4coding/sigma-auth
 
 jobs:
   build-and-push:
@@ -27,7 +30,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: andrew4coding/sigma-auth:latest
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }},${{ env.IMAGE_NAME }}:latest
 
   deploy:
     needs: build-and-push
@@ -39,9 +42,24 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: SSH and redeploy on VM in K3S
+      - name: SSH and deploy to K3S
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-                #   Reroll Deployment
-                sudo kubectl rollout restart deployment sigma-auth -n default
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            set -e
+
+            IMAGE=${{ env.IMAGE_NAME }}:${{ github.sha }}
+            DEPLOYMENT_NAME=sigma-auth
+            CONTAINER_NAME=sigma-auth
+
+            echo "Setting new image: \$IMAGE"
+            kubectl set image deployment/\$DEPLOYMENT_NAME \$CONTAINER_NAME=\$IMAGE --namespace=default
+
+            echo "Waiting for rollout to finish..."
+            if ! kubectl rollout status deployment/\$DEPLOYMENT_NAME --timeout=60s --namespace=default; then
+              echo "❌ Rollout failed. Performing rollback..."
+              kubectl rollout undo deployment/\$DEPLOYMENT_NAME --namespace=default
+              exit 1
+            fi
+
+            echo "✅ Deployment succeeded"
           EOF
