@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let pool_ = pool.clone();
     let grpc_task = tokio::spawn(async move {
-        let addr = "[::1]:50051";
+        let addr = "[::]:50051";
         tracing::info!("Starting gRPC server at {}", addr);
         let app = GrpcApp::default().with_pool(pool_);
         app.run(addr).await.unwrap();
