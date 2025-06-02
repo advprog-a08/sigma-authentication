@@ -1,0 +1,56 @@
+name: Rollback App Version in K3S
+
+on:
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: andrew4coding/sigma-auth
+  DEPLOYMENT_NAME: sigma-auth
+  CONTAINER_NAME: sigma-auth
+  ROLLBACK_FILE_PATH: ~/kube-rollbacks/sigma_auth.txt
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Extract Rollback Image
+        id: extract_image
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            set -e
+            (cat ${{env.ROLLBACK_FILE_PATH}} | sed '$d') | tail -n 1 | grep -oP '(?<=\-\s)(.*)' > tmp
+            cat tmp
+          EOF
+
+          # Fetch the image string from the server
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cat ~/kube-rollbacks/tmp" > rollback_image.txt
+          cat rollback_image.txt
+          image=$(cat rollback_image.txt)
+          echo "rollback_image=$image" >> "$GITHUB_OUTPUT"
+
+      - name: SSH and Rollout Previous Image to K3S
+        if: steps.extract_image.outputs.rollback_image
+        run: |
+          set -e
+          ROLLBACK_IMAGE="${{ steps.extract_image.outputs.rollback_image }}"
+          DEPLOYMENT_NAME="${{ env.DEPLOYMENT_NAME }}"
+          CONTAINER_NAME="${{ env.CONTAINER_NAME }}"
+
+          echo "Rolling back to image: $ROLLBACK_IMAGE for deployment '$DEPLOYMENT_NAME'..."
+
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            set -e
+            kubectl set image deployment/$DEPLOYMENT_NAME $CONTAINER_NAME=$ROLLBACK_IMAGE --namespace=default
+            echo "Waiting for rollout to finish for deployment '$DEPLOYMENT_NAME'..."
+            if ! kubectl rollout status deployment/$DEPLOYMENT_NAME --timeout=60s --namespace=default; then
+              echo "❌ Rollout failed."
+              exit 1
+            fi
+            echo "✅ Rollback to previous image succeeded for '$DEPLOYMENT_NAME' with image $ROLLBACK_IMAGE"
+          EOF

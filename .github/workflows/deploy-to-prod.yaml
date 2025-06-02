@@ -17,7 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          submodules: recursive
+          submodules: true
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -50,6 +50,11 @@ jobs:
             IMAGE=${{ env.IMAGE_NAME }}:${{ github.sha }}
             DEPLOYMENT_NAME=sigma-auth
             CONTAINER_NAME=sigma-auth
+            ROLLBACK_FILE=sigma-auth.txt
+
+            cd ~/kube-rollbacks
+
+            echo "$(date +'%Y-%m-%d %H:%M:%S') - \$IMAGE" >> \$ROLLBACK_FILE
 
             echo "Setting new image: \$IMAGE"
             kubectl set image deployment/\$DEPLOYMENT_NAME \$CONTAINER_NAME=\$IMAGE --namespace=default
